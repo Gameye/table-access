@@ -12,16 +12,11 @@ export class DatabaseTestContext extends DisposableComposition {
             sql,
             poolConfig,
         );
-        await context.setupDatabase();
-        await context.setupPool();
+        await context.initialize();
         return context;
     }
 
-    public get pool() {
-        if (this.tempPool === undefined) throw new Error("pool not initialized");
-        return this.tempPool;
-    }
-    private tempPool: pg.Pool | undefined;
+    private pool: pg.Pool = undefined as any;
     private databaseName = `${this.poolConfig.database || ""}_${(++key).toString(36)}`;
 
     private constructor(
@@ -31,13 +26,27 @@ export class DatabaseTestContext extends DisposableComposition {
         super();
     }
 
+    public getPool() {
+        if (this.pool === undefined) throw new Error("pool not initialized");
+        return this.pool;
+    }
+
+    private async initialize() {
+        await this.setupDatabase();
+        this.registerDisposable({ dispose: () => this.teardownDatabase() });
+
+        await this.setupPool();
+        this.registerDisposable({ dispose: () => this.teardownPool() });
+
+        await this.applySql();
+    }
+
     private async setupDatabase() {
         const { databaseName, poolConfig } = this;
         const adminPool = new pg.Pool(poolConfig);
         try {
             await adminPool.query(`DROP DATABASE IF EXISTS "${databaseName}";`);
             await adminPool.query(`CREATE DATABASE "${databaseName}";`);
-            this.registerDisposable({ dispose: () => this.teardownDatabase() });
         }
         finally {
             await adminPool.end();
@@ -57,21 +66,16 @@ export class DatabaseTestContext extends DisposableComposition {
 
     private async setupPool() {
         const { databaseName, poolConfig } = this;
-        this.tempPool = new pg.Pool({ ...poolConfig, ...{ database: databaseName } });
-        this.registerDisposable({ dispose: () => this.teardownPool() });
-        await this.applySql();
+        this.pool = new pg.Pool({ ...poolConfig, ...{ database: databaseName } });
     }
 
     private async teardownPool() {
-        const { tempPool } = this;
-        if (tempPool === undefined) return;
-        await tempPool.end();
+        const { pool } = this;
+        await pool.end();
     }
 
     private async applySql() {
-        const { tempPool, sql } = this;
-        if (tempPool === undefined) throw new Error("pool not initialized");
-
-        await tempPool.query(sql);
+        const { pool, sql } = this;
+        await pool.query(sql);
     }
 }

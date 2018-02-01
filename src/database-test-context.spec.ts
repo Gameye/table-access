@@ -11,8 +11,8 @@ CREATE TABLE public.one(
 
 test(
     "DatabaseTestContext#create",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
-        const result = await pool.query(`
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
+        const result = await tempPool.query(`
 INSERT INTO public.one (name)
 VALUES('one')
 RETURNING *

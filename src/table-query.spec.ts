@@ -26,9 +26,9 @@ const OneTableDescriptor: TableDescriptor<OneTableRow> = {
 
 test(
     "TableQuery#single",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
         {
-            const row = await TableQuery.query(pool, q => q.single(
+            const row = await TableQuery.query(tempPool, q => q.single(
                 OneTableDescriptor,
                 { id: 2 },
             ));
@@ -36,7 +36,7 @@ test(
             t.deepEqual(row, { id: 2, name: "two" });
         }
         try {
-            const row = await TableQuery.query(pool, q => q.single(
+            const row = await TableQuery.query(tempPool, q => q.single(
                 OneTableDescriptor,
                 { id: 4 },
             ));
@@ -51,9 +51,9 @@ test(
 
 test(
     "TableQuery#singleOrNull",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
         {
-            const row = await TableQuery.query(pool, q => q.singleOrNull(
+            const row = await TableQuery.query(tempPool, q => q.singleOrNull(
                 OneTableDescriptor,
                 { id: 2 },
             ));
@@ -62,7 +62,7 @@ test(
         }
 
         {
-            const row = await TableQuery.query(pool, q => q.singleOrNull(
+            const row = await TableQuery.query(tempPool, q => q.singleOrNull(
                 OneTableDescriptor,
                 { id: 4 },
             ));
@@ -75,8 +75,8 @@ test(
 
 test(
     "TableQuery#multiple",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
-        const rows = await TableQuery.query(pool, q => q.multiple(
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
+        const rows = await TableQuery.query(tempPool, q => q.multiple(
             OneTableDescriptor,
             { id: 2 },
         ));
@@ -87,8 +87,8 @@ test(
 
 test(
     "TableQuery#insert",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
-        const row = await TableQuery.query(pool, q => q.insert(
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
+        const row = await TableQuery.query(tempPool, q => q.insert(
             OneTableDescriptor,
             { name: "three" },
         ));
@@ -99,9 +99,9 @@ test(
 
 test(
     "TableQuery#update",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
         {
-            const row = await TableQuery.query(pool, q => q.update(
+            const row = await TableQuery.query(tempPool, q => q.update(
                 OneTableDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -111,7 +111,7 @@ test(
         }
 
         try {
-            const row = await TableQuery.query(pool, q => q.update(
+            const row = await TableQuery.query(tempPool, q => q.update(
                 OneTableDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -127,8 +127,8 @@ test(
 
 test(
     "TableQuery#upsert",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
-        const row = await TableQuery.query(pool, q => q.upsert(
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
+        const row = await TableQuery.query(tempPool, q => q.upsert(
             OneTableDescriptor,
             { id: 2 },
             { name: "twee" },
@@ -140,8 +140,8 @@ test(
 
 test(
     "TableQuery#ensure",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
-        const row = await TableQuery.query(pool, q => q.ensure(
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
+        const row = await TableQuery.query(tempPool, q => q.ensure(
             OneTableDescriptor,
             { id: 4 },
             { name: "four" },
@@ -153,8 +153,8 @@ test(
 
 test(
     "TableQuery#delete",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
-        const row = await TableQuery.query(pool, q => q.delete(
+    async t => using(DatabaseTestContext.create(sql), async ({ tempPool }) => {
+        const row = await TableQuery.query(tempPool, q => q.delete(
             OneTableDescriptor,
             { id: 2 },
         ));

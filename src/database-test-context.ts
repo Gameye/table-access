@@ -17,7 +17,11 @@ export class DatabaseTestContext extends DisposableComposition {
         return context;
     }
 
-    public pool: pg.Pool;
+    public get pool() {
+        if (this.tempPool === undefined) throw new Error("pool not initialized");
+        return this.tempPool;
+    }
+    private tempPool: pg.Pool | undefined;
     private databaseName = `${this.poolConfig.database || ""}_${(++key).toString(36)}`;
 
     private constructor(
@@ -53,19 +57,21 @@ export class DatabaseTestContext extends DisposableComposition {
 
     private async setupPool() {
         const { databaseName, poolConfig } = this;
-        this.pool = new pg.Pool({ ...poolConfig, ...{ database: databaseName } });
+        this.tempPool = new pg.Pool({ ...poolConfig, ...{ database: databaseName } });
         this.registerDisposable({ dispose: () => this.teardownPool() });
         await this.applySql();
     }
 
     private async teardownPool() {
-        await this.pool.end();
+        const { tempPool } = this;
+        if (tempPool === undefined) return;
+        await tempPool.end();
     }
 
     private async applySql() {
-        const { pool, sql } = this;
-        if (pool === null) throw new Error("pool not initialized");
+        const { tempPool, sql } = this;
+        if (tempPool === undefined) throw new Error("pool not initialized");
 
-        await pool.query(sql);
+        await tempPool.query(sql);
     }
 }

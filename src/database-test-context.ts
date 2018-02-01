@@ -16,7 +16,7 @@ export class DatabaseTestContext extends DisposableComposition {
         return context;
     }
 
-    private pool: pg.Pool = undefined as any;
+    public pool: pg.Pool = undefined as any;
     private databaseName = `${this.poolConfig.database || ""}_${(++key).toString(36)}`;
 
     private constructor(
@@ -24,11 +24,6 @@ export class DatabaseTestContext extends DisposableComposition {
         private poolConfig: pg.PoolConfig = {},
     ) {
         super();
-    }
-
-    public getPool() {
-        if (this.pool === undefined) throw new Error("pool not initialized");
-        return this.pool;
     }
 
     private async initialize() {

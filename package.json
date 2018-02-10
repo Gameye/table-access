@@ -1,6 +1,6 @@
 {
   "name": "table-access",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "",
   "main": "./node/main.js",
   "module": "./module/main.js",

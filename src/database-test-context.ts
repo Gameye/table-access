@@ -16,10 +16,10 @@ export class DatabaseTestContext extends DisposableComposition {
         return context;
     }
 
-    public pool: pg.Pool = undefined as any;
+    public pool!: pg.Pool;
     private databaseName = `${this.poolConfig.database || ""}_${(++key).toString(36)}`;
 
-    private constructor(
+    protected constructor(
         private sql: string,
         private poolConfig: pg.PoolConfig = {},
     ) {

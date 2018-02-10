@@ -24,7 +24,7 @@
     "nyc": "^11.4.1",
     "tape": "^4.8.0",
     "ts-node": "^4.1.0",
-    "tslint": "^5.8.0",
+    "tslint": "^5.9.1",
     "typescript": "^2.7.1"
   },
   "dependencies": {
@@ -33,6 +33,6 @@
     "http-errors": "^1.6.2",
     "pg": "^7.4.1",
     "tslib": "^1.9.0",
-    "using-disposable": "^1.7.8"
+    "using-disposable": "^1.7.9"
   }
 }

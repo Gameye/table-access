@@ -19,7 +19,7 @@ RETURNING *
 ;`);
         t.equal(result.rowCount, 1);
 
-        const [row] = result.rows;
+        const [row] = result.resultingRows;
         t.deepEqual(row, { id: 1, name: "one" });
     }),
 );

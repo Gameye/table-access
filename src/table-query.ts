@@ -31,6 +31,12 @@ export class TableQuery {
         private readonly client: pg.Client,
     ) { }
 
+    /**
+     * Retrieves exactly one row from the specified table, if no or more than
+     * one row matches the provided filter, an exception is thrown.
+     * @param descriptor described the table to retrieve data from
+     * @param filter a filter that will return exactly one row
+     */
     public async single<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: RowFilter<Row> | Partial<Row>,
@@ -43,6 +49,12 @@ export class TableQuery {
         return record;
     }
 
+    /**
+     * Returns null or one row from the provided table. If the filter matches
+     * more than one row, an exceptoin is thrown
+     * @param descriptor describes the table to retrieve data from
+     * @param filter a filter to match the row againts
+     */
     public async singleOrNull<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: RowFilter<Row> | Partial<Row>,
@@ -59,6 +71,12 @@ export class TableQuery {
         return record;
     }
 
+    /**
+     * returns many rows from the provided table, mathing them to the provided
+     * filter. If no match is found this function will return an empty array
+     * @param descriptor the table to retrieve data from
+     * @param filter a filter to match to the rows
+     */
     public async multiple<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: RowFilter<Row> | Partial<Row>,
@@ -73,20 +91,25 @@ FROM "${schema}"."${table}" AS r
 ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
 ;`, filterResult.param);
 
-        const { rows } = result;
+        const { resultingRows } = result;
 
-        return rows.map(row => row.o);
+        return resultingRows.map(row => row.o);
     }
 
+    /**
+     * insert a row in the provided table and return the inserted row
+     * @param descriptor the table to insert a row into
+     * @param row The row to insert
+     */
     public async insert<Row extends object>(
         descriptor: TableDescriptor<Row>,
-        item: Partial<Row>,
+        row: Partial<Row>,
     ): Promise<Row> {
         const { client } = this;
         const { schema, table } = descriptor;
 
-        const itemFields = Object.keys(item) as Array<keyof Row>;
-        const itemValues = itemFields.map(f => item[f]);
+        const itemFields = Object.keys(row) as Array<keyof Row>;
+        const itemValues = itemFields.map(f => row[f]);
 
         const result = await client.query(`
 WITH r AS (
@@ -98,25 +121,32 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, itemValues);
 
-        const { rows } = result;
-        if (rows.length < 1)
+        const { resultingRows } = result;
+        if (resultingRows.length < 1)
             throw new NotFound(
                 `No result for ${schema}.${table} insert`,
             );
-        if (rows.length > 1)
+        if (resultingRows.length > 1)
             throw new Conflict(
                 `More than one result for ${schema}.${table} insert`,
             );
 
-        const [row] = rows;
+        const [resultingRow] = resultingRows;
 
-        return row.o;
+        return resultingRow.o;
     }
 
+    /**
+     * Update exactly one row in the provided table. If the filter matches zero
+     * or more than one row, an exception is thrown
+     * @param descriptor the table to update a row in
+     * @param filter  a filter that will math exactly one row to update
+     * @param row the new, updated row
+     */
     public async update<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: Partial<Row>,
-        item: Partial<Row>,
+        row: Partial<Row>,
     ): Promise<Row> {
         const { client } = this;
         const { schema, table } = descriptor;
@@ -124,8 +154,8 @@ FROM r
         const filterFields = Object.keys(filter) as Array<keyof Row>;
         const filterValues = filterFields.map(f => filter[f]);
 
-        const itemFields = Object.keys(item) as Array<keyof Row>;
-        const itemValues = itemFields.map(f => item[f]);
+        const itemFields = Object.keys(row) as Array<keyof Row>;
+        const itemValues = itemFields.map(f => row[f]);
 
         const result = await client.query(`
 WITH r AS (
@@ -138,23 +168,31 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, [...filterValues, ...itemValues]);
 
-        const { rows } = result;
-        if (rows.length < 1) throw new NotFound(
+        const { resultingRows } = result;
+        if (resultingRows.length < 1) throw new NotFound(
             `No result for ${schema}.${table} update`,
         );
-        if (rows.length > 1) throw new Conflict(
+        if (resultingRows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} update`,
         );
 
-        const [row] = rows;
+        const [resultingRow] = resultingRows;
 
-        return row.o;
+        return resultingRow.o;
     }
 
+    /**
+     * Update or insert (upsert!) a row that matches the provided filter in the
+     * provided table. If no row is found to update, an insert is done! If
+     * there are more than one rows found, an exception it thrown.
+     * @param descriptor The table to perform the upsert on
+     * @param filter a filter that will be used to find the row to update
+     * @param row The new row
+     */
     public async upsert<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: Partial<Row>,
-        item: Partial<Row>,
+        row: Partial<Row>,
     ): Promise<Row> {
         const { client } = this;
         const { schema, table } = descriptor;
@@ -162,8 +200,8 @@ FROM r
         const filterFields = Object.keys(filter) as Array<keyof Row>;
         const filterValues = filterFields.map(f => filter[f]);
 
-        const itemFields = Object.keys(item) as Array<keyof Row>;
-        const itemValues = itemFields.map(f => item[f]);
+        const itemFields = Object.keys(row) as Array<keyof Row>;
+        const itemValues = itemFields.map(f => row[f]);
 
         const result = await client.query(`
 WITH r AS (
@@ -181,23 +219,30 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, [...filterValues, ...itemValues]);
 
-        const { rows } = result;
-        if (rows.length < 1) throw new NotFound(
+        const { resultingRows } = result;
+        if (resultingRows.length < 1) throw new NotFound(
             `No result for ${schema}.${table} upsert`,
         );
-        if (rows.length > 1) throw new Conflict(
+        if (resultingRows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} upsert`,
         );
 
-        const [row] = rows;
+        const [resultingRow] = resultingRows;
 
-        return row.o;
+        return resultingRow.o;
     }
 
+    /**
+     * Find a row that matches the provided filter, if the row does not exist,
+     * insert it. Will throw an exception if more than row is found.
+     * @param descriptor The table to perform the operation on
+     * @param filter The filter to match against the rows in the table
+     * @param row The row that will be inserted if not found
+     */
     public async ensure<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: Partial<Row>,
-        item: Partial<Row>,
+        row: Partial<Row>,
     ): Promise<Row | null> {
         const { client } = this;
         const { schema, table } = descriptor;
@@ -205,8 +250,8 @@ FROM r
         const filterFields = Object.keys(filter) as Array<keyof Row>;
         const filterValues = filterFields.map(f => filter[f]);
 
-        const itemFields = Object.keys(item) as Array<keyof Row>;
-        const itemValues = itemFields.map(f => item[f]);
+        const itemFields = Object.keys(row) as Array<keyof Row>;
+        const itemValues = itemFields.map(f => row[f]);
 
         const result = await client.query(`
 WITH r AS (
@@ -223,17 +268,24 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, [...filterValues, ...itemValues]);
 
-        const { rows } = result;
-        if (rows.length < 1) return null;
-        if (rows.length > 1) throw new Conflict(
+        const { resultingRows } = result;
+        if (resultingRows.length < 1) return null;
+        if (resultingRows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} ensure`,
         );
 
-        const [row] = rows;
+        const [resultingRow] = resultingRows;
 
-        return row.o;
+        return resultingRow.o;
     }
 
+    /**
+     * Will delete exactly one row from the provided table. If more than one
+     * row is deleted or if no row will be deleted, this function will throw an
+     * exception.
+     * @param descriptor the table to delete the row from
+     * @param filter a filter to match the row aginast
+     */
     public async delete<Row extends object>(
         descriptor: TableDescriptor<Row>,
         filter: Partial<Row>,
@@ -254,16 +306,16 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, filterValues);
 
-        const { rows } = result;
-        if (rows.length < 1) throw new NotFound(
+        const { resultingRows } = result;
+        if (resultingRows.length < 1) throw new NotFound(
             `No result for ${schema}.${table} delete`,
         );
-        if (rows.length > 1) throw new Conflict(
+        if (resultingRows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} delete`,
         );
 
-        const [row] = rows;
+        const [resultingRow] = resultingRows;
 
-        return row.o;
+        return resultingRow.o;
     }
 }

@@ -91,9 +91,9 @@ FROM "${schema}"."${table}" AS r
 ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
 ;`, filterResult.param);
 
-        const { resultingRows } = result;
+        const { rows } = result;
 
-        return resultingRows.map(row => row.o);
+        return rows.map(row => row.o);
     }
 
     /**
@@ -121,17 +121,17 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, itemValues);
 
-        const { resultingRows } = result;
-        if (resultingRows.length < 1)
+        const { rows } = result;
+        if (rows.length < 1)
             throw new NotFound(
                 `No result for ${schema}.${table} insert`,
             );
-        if (resultingRows.length > 1)
+        if (rows.length > 1)
             throw new Conflict(
                 `More than one result for ${schema}.${table} insert`,
             );
 
-        const [resultingRow] = resultingRows;
+        const [resultingRow] = rows;
 
         return resultingRow.o;
     }
@@ -168,15 +168,15 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, [...filterValues, ...itemValues]);
 
-        const { resultingRows } = result;
-        if (resultingRows.length < 1) throw new NotFound(
+        const { rows } = result;
+        if (rows.length < 1) throw new NotFound(
             `No result for ${schema}.${table} update`,
         );
-        if (resultingRows.length > 1) throw new Conflict(
+        if (rows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} update`,
         );
 
-        const [resultingRow] = resultingRows;
+        const [resultingRow] = rows;
 
         return resultingRow.o;
     }
@@ -219,15 +219,15 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, [...filterValues, ...itemValues]);
 
-        const { resultingRows } = result;
-        if (resultingRows.length < 1) throw new NotFound(
+        const { rows } = result;
+        if (rows.length < 1) throw new NotFound(
             `No result for ${schema}.${table} upsert`,
         );
-        if (resultingRows.length > 1) throw new Conflict(
+        if (rows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} upsert`,
         );
 
-        const [resultingRow] = resultingRows;
+        const [resultingRow] = rows;
 
         return resultingRow.o;
     }
@@ -268,13 +268,13 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, [...filterValues, ...itemValues]);
 
-        const { resultingRows } = result;
-        if (resultingRows.length < 1) return null;
-        if (resultingRows.length > 1) throw new Conflict(
+        const { rows } = result;
+        if (rows.length < 1) return null;
+        if (rows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} ensure`,
         );
 
-        const [resultingRow] = resultingRows;
+        const [resultingRow] = rows;
 
         return resultingRow.o;
     }
@@ -306,15 +306,15 @@ SELECT row_to_json(r) AS o
 FROM r
 ;`, filterValues);
 
-        const { resultingRows } = result;
-        if (resultingRows.length < 1) throw new NotFound(
+        const { rows } = result;
+        if (rows.length < 1) throw new NotFound(
             `No result for ${schema}.${table} delete`,
         );
-        if (resultingRows.length > 1) throw new Conflict(
+        if (rows.length > 1) throw new Conflict(
             `More than one result for ${schema}.${table} delete`,
         );
 
-        const [resultingRow] = resultingRows;
+        const [resultingRow] = rows;
 
         return resultingRow.o;
     }

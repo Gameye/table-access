@@ -1,7 +1,7 @@
 import * as test from "blue-tape";
 import { NotFound } from "http-errors";
+import { PgContext } from "pg-context";
 import { using } from "using-disposable";
-import { DatabaseTestContext } from "./database-test-context";
 import { TableDescriptor } from "./table-descriptor";
 import { TableQuery } from "./table-query";
 
@@ -26,7 +26,7 @@ const OneTableDescriptor: TableDescriptor<OneTableRow> = {
 
 test(
     "TableQuery#single",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         {
             const row = await TableQuery.query(pool, q => q.single(
                 OneTableDescriptor,
@@ -51,7 +51,7 @@ test(
 
 test(
     "TableQuery#singleOrNull",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         {
             const row = await TableQuery.query(pool, q => q.singleOrNull(
                 OneTableDescriptor,
@@ -75,7 +75,7 @@ test(
 
 test(
     "TableQuery#multiple",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         const rows = await TableQuery.query(pool, q => q.multiple(
             OneTableDescriptor,
             { id: 2 },
@@ -87,7 +87,7 @@ test(
 
 test(
     "TableQuery#insert",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         const row = await TableQuery.query(pool, q => q.insert(
             OneTableDescriptor,
             { name: "three" },
@@ -99,7 +99,7 @@ test(
 
 test(
     "TableQuery#update",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         {
             const row = await TableQuery.query(pool, q => q.update(
                 OneTableDescriptor,
@@ -127,7 +127,7 @@ test(
 
 test(
     "TableQuery#upsert",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         const row = await TableQuery.query(pool, q => q.upsert(
             OneTableDescriptor,
             { id: 2 },
@@ -140,7 +140,7 @@ test(
 
 test(
     "TableQuery#ensure",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         const row = await TableQuery.query(pool, q => q.ensure(
             OneTableDescriptor,
             { id: 4 },
@@ -153,7 +153,7 @@ test(
 
 test(
     "TableQuery#delete",
-    async t => using(DatabaseTestContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql), async ({ pool }) => {
         const row = await TableQuery.query(pool, q => q.delete(
             OneTableDescriptor,
             { id: 2 },

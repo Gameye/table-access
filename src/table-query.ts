@@ -28,7 +28,7 @@ export class TableQuery {
     }
 
     private constructor(
-        private readonly client: pg.Client,
+        private readonly client: pg.PoolClient,
     ) { }
 
     /**

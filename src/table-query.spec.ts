@@ -1,7 +1,7 @@
 import * as test from "blue-tape";
+import { using } from "dispose";
 import { NotFound } from "http-errors";
 import { PgContext } from "pg-context";
-import { using } from "using-disposable";
 import { TableDescriptor } from "./table-descriptor";
 import { TableQuery } from "./table-query";
 

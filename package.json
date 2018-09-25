@@ -31,9 +31,9 @@
   "dependencies": {
     "@types/http-errors": "^1.6.1",
     "@types/pg": "^7.4.1",
+    "dispose": "^1.0.3",
     "http-errors": "^1.6.2",
     "pg": "^7.4.1",
-    "tslib": "^1.9.0",
-    "using-disposable": "^1.7.9"
+    "tslib": "^1.9.0"
   }
 }

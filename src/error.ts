@@ -10,3 +10,13 @@ export class UnexpectedRowCountError extends Error {
         super(`unexpected row count expected ${expected}, actual ${actual}`);
     }
 }
+
+export class UniqueConstraintError extends Error {
+    constructor(
+        public schema: string,
+        public table: string,
+        public innerError: Error,
+    ) {
+        super(innerError.message);
+    }
+}

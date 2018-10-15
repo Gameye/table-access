@@ -1,14 +1,14 @@
 import * as test from "blue-tape";
 import { using } from "dispose";
 import { PgContext } from "pg-context";
-import { UnexpectedRowCountError } from "./error";
+import { UnexpectedRowCountError, UniqueConstraintError } from "./error";
 import { TableDescriptor } from "./table-descriptor";
 import { TableQuery } from "./table-query";
 
 const sql = `
 CREATE TABLE public.one(
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
 INSERT INTO public.one(name)
 VALUES('one'), ('two');
@@ -43,8 +43,8 @@ test(
 
             t.fail();
         }
-        catch (e) {
-            t.ok(e instanceof UnexpectedRowCountError);
+        catch (err) {
+            t.ok(err instanceof UnexpectedRowCountError);
         }
     }),
 );
@@ -88,12 +88,38 @@ test(
 test(
     "TableQuery#insert",
     async t => using(PgContext.create(sql), async ({ pool }) => {
-        const row = await TableQuery.query(pool, q => q.insert(
-            OneTableDescriptor,
-            { name: "three" },
-        ));
+        {
+            const row = await TableQuery.query(pool, q => q.insert(
+                OneTableDescriptor,
+                { name: "three" },
+            ));
 
-        t.deepEqual(row, { id: 3, name: "three" });
+            t.deepEqual(row, { id: 3, name: "three" });
+        }
+
+        try {
+            const row = await TableQuery.query(pool, q => q.insert(
+                OneTableDescriptor,
+                { id: 1, name: "four" },
+            ));
+
+            t.fail();
+        }
+        catch (err) {
+            t.ok(err instanceof UniqueConstraintError);
+        }
+
+        try {
+            const row = await TableQuery.query(pool, q => q.insert(
+                OneTableDescriptor,
+                { id: 5, name: "one" },
+            ));
+
+            t.fail();
+        }
+        catch (err) {
+            t.ok(err instanceof UniqueConstraintError);
+        }
     }),
 );
 
@@ -119,8 +145,8 @@ test(
 
             t.fail();
         }
-        catch (e) {
-            t.ok(e instanceof UnexpectedRowCountError);
+        catch (err) {
+            t.ok(err instanceof UnexpectedRowCountError);
         }
     }),
 );

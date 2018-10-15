@@ -1,7 +1,7 @@
 import * as test from "blue-tape";
 import { using } from "dispose";
-import { NotFound } from "http-errors";
 import { PgContext } from "pg-context";
+import { UnexpectedRowCountError } from "./error";
 import { TableDescriptor } from "./table-descriptor";
 import { TableQuery } from "./table-query";
 
@@ -44,7 +44,7 @@ test(
             t.fail();
         }
         catch (e) {
-            t.ok(e instanceof NotFound);
+            t.ok(e instanceof UnexpectedRowCountError);
         }
     }),
 );
@@ -120,7 +120,7 @@ test(
             t.fail();
         }
         catch (e) {
-            t.ok(e instanceof NotFound);
+            t.ok(e instanceof UnexpectedRowCountError);
         }
     }),
 );
@@ -135,19 +135,6 @@ test(
         ));
 
         t.deepEqual(row, { id: 2, name: "twee" });
-    }),
-);
-
-test(
-    "TableQuery#ensure",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
-        const row = await TableQuery.query(pool, q => q.ensure(
-            OneTableDescriptor,
-            { id: 4 },
-            { name: "four" },
-        ));
-
-        t.deepEqual(row, { id: 4, name: "four" });
     }),
 );
 

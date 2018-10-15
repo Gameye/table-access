@@ -1,5 +1,5 @@
-import { Conflict, NotFound } from "http-errors";
 import * as pg from "pg";
+import { UnexpectedRowCountError } from "./error";
 import { makeRowFilterPg, RowFilter } from "./row-filter";
 import { TableDescriptor } from "./table-descriptor";
 
@@ -42,10 +42,16 @@ export class TableQuery {
         filter: RowFilter<Row> | Partial<Row>,
     ): Promise<Row> {
         const { schema, table } = descriptor;
-        const record = await this.singleOrNull(descriptor, filter);
-        if (!record) throw new NotFound(
-            `No result for ${schema}.${table} select`,
+        const rows = await this.multiple(descriptor, filter);
+
+        if (rows.length !== 1) throw new UnexpectedRowCountError(
+            schema,
+            table,
+            1,
+            rows.length,
         );
+
+        const [record] = rows;
         return record;
     }
 
@@ -60,14 +66,17 @@ export class TableQuery {
         filter: RowFilter<Row> | Partial<Row>,
     ): Promise<Row | null> {
         const { schema, table } = descriptor;
-        const records = await this.multiple(descriptor, filter);
+        const rows = await this.multiple(descriptor, filter);
 
-        if (records.length < 1) return null;
-        if (records.length > 1) throw new Conflict(
-            `More than one result for ${schema}.${table} select`,
+        if (rows.length < 1) return null;
+        if (rows.length !== 1) throw new UnexpectedRowCountError(
+            schema,
+            table,
+            1,
+            rows.length,
         );
 
-        const [record] = records;
+        const [record] = rows;
         return record;
     }
 
@@ -122,14 +131,12 @@ FROM r
 ;`, itemValues);
 
         const { rows } = result;
-        if (rows.length < 1)
-            throw new NotFound(
-                `No result for ${schema}.${table} insert`,
-            );
-        if (rows.length > 1)
-            throw new Conflict(
-                `More than one result for ${schema}.${table} insert`,
-            );
+        if (rows.length !== 1) throw new UnexpectedRowCountError(
+            schema,
+            table,
+            1,
+            rows.length,
+        );
 
         const [resultingRow] = rows;
 
@@ -169,11 +176,11 @@ FROM r
 ;`, [...filterValues, ...itemValues]);
 
         const { rows } = result;
-        if (rows.length < 1) throw new NotFound(
-            `No result for ${schema}.${table} update`,
-        );
-        if (rows.length > 1) throw new Conflict(
-            `More than one result for ${schema}.${table} update`,
+        if (rows.length !== 1) throw new UnexpectedRowCountError(
+            schema,
+            table,
+            1,
+            rows.length,
         );
 
         const [resultingRow] = rows;
@@ -200,78 +207,31 @@ FROM r
         const filterFields = Object.keys(filter) as Array<keyof Row>;
         const filterValues = filterFields.map(f => filter[f]);
 
-        const itemFields = Object.keys(row) as Array<keyof Row>;
-        const itemValues = itemFields.map(f => row[f]);
+        const rowFields = Object.keys(row) as Array<keyof Row>;
+        const rowValues = rowFields.map(f => row[f]);
 
         const result = await client.query(`
 WITH r AS (
     INSERT INTO "${schema}"."${table}" (
-        ${[...filterFields, ...itemFields].map(f => `"${f}"`).join(",")}
+        ${[...filterFields, ...rowFields].map(f => `"${f}"`).join(",")}
     )
     VALUES (
-        ${[...filterFields, ...itemFields].map((f, i) => `$${i + 1}`).join(",")}
+        ${[...filterFields, ...rowFields].map((f, i) => `$${i + 1}`).join(",")}
     )
     ON CONFLICT (${filterFields.map(f => `"${f}"`).join(",")}) DO UPDATE
-    SET ${itemFields.map((f, i) => `"${f}"=EXCLUDED.${f}`).join(",")}
+    SET ${rowFields.map((f, i) => `"${f}"=EXCLUDED.${f}`).join(",")}
     RETURNING *
 )
 SELECT row_to_json(r) AS o
 FROM r
-;`, [...filterValues, ...itemValues]);
+;`, [...filterValues, ...rowValues]);
 
         const { rows } = result;
-        if (rows.length < 1) throw new NotFound(
-            `No result for ${schema}.${table} upsert`,
-        );
-        if (rows.length > 1) throw new Conflict(
-            `More than one result for ${schema}.${table} upsert`,
-        );
-
-        const [resultingRow] = rows;
-
-        return resultingRow.o;
-    }
-
-    /**
-     * Find a row that matches the provided filter, if the row does not exist,
-     * insert it. Will throw an exception if more than row is found.
-     * @param descriptor The table to perform the operation on
-     * @param filter The filter to match against the rows in the table
-     * @param row The row that will be inserted if not found
-     */
-    public async ensure<Row extends object>(
-        descriptor: TableDescriptor<Row>,
-        filter: Partial<Row>,
-        row: Partial<Row>,
-    ): Promise<Row | null> {
-        const { client } = this;
-        const { schema, table } = descriptor;
-
-        const filterFields = Object.keys(filter) as Array<keyof Row>;
-        const filterValues = filterFields.map(f => filter[f]);
-
-        const itemFields = Object.keys(row) as Array<keyof Row>;
-        const itemValues = itemFields.map(f => row[f]);
-
-        const result = await client.query(`
-WITH r AS (
-    INSERT INTO "${schema}"."${table}" (
-        ${[...filterFields, ...itemFields].map(f => `"${f}"`).join(",")}
-    )
-    VALUES (
-        ${[...filterFields, ...itemFields].map((f, i) => `$${i + 1}`).join(",")}
-    )
-    ON CONFLICT (${filterFields.map(f => `"${f}"`).join(",")}) DO NOTHING
-    RETURNING *
-)
-SELECT row_to_json(r) AS o
-FROM r
-;`, [...filterValues, ...itemValues]);
-
-        const { rows } = result;
-        if (rows.length < 1) return null;
-        if (rows.length > 1) throw new Conflict(
-            `More than one result for ${schema}.${table} ensure`,
+        if (rows.length !== 1) throw new UnexpectedRowCountError(
+            schema,
+            table,
+            1,
+            rows.length,
         );
 
         const [resultingRow] = rows;
@@ -307,11 +267,11 @@ FROM r
 ;`, filterValues);
 
         const { rows } = result;
-        if (rows.length < 1) throw new NotFound(
-            `No result for ${schema}.${table} delete`,
-        );
-        if (rows.length > 1) throw new Conflict(
-            `More than one result for ${schema}.${table} delete`,
+        if (rows.length !== 1) throw new UnexpectedRowCountError(
+            schema,
+            table,
+            1,
+            rows.length,
         );
 
         const [resultingRow] = rows;

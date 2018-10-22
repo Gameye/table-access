@@ -1,4 +1,5 @@
 export * from "./row-filter";
-export * from "./table-descriptor";
+export * from "./row-descriptor";
+export * from "./table-transaction";
 export * from "./table-query";
 export * from "./error";

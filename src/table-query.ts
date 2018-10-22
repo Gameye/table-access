@@ -9,11 +9,13 @@ export type TableQueryEvent<TRow extends object> =
     TableQueryChangeEvent<TRow>;
 
 export interface TableQueryInitialEvent<TRow extends object> {
+    type: "initial";
     row: RowDescriptor<TRow>;
     initial: TRow[];
 }
 
 export interface TableQueryChangeEvent<TRow extends object> {
+    type: "change";
     row: RowDescriptor<TRow>;
     old: TRow | null;
     new: TRow | null;
@@ -75,6 +77,7 @@ export class TableQuery<TRow extends object> extends Readable {
             await Promise.all(queryDescriptors.map(async ({ row, filter }) => {
                 const rows = await this.fetch(row, filter);
                 this.push({
+                    type: "initial",
                     row,
                     initial: rows,
                 } as TableQueryInitialEvent<TRow>);
@@ -127,7 +130,10 @@ export class TableQuery<TRow extends object> extends Readable {
             if (!(newRow || oldRow)) return;
 
             this.push({
-                row, old: oldRow, new: newRow,
+                type: "change",
+                row,
+                old: oldRow,
+                new: newRow,
             } as TableQueryChangeEvent<TRow>);
         }
 

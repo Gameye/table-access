@@ -45,7 +45,7 @@ export class TableQuery<TRow extends object> extends Readable {
         private readonly queryDescriptors: Array<QueryDescriptor<TRow>>,
     ) {
         super({
-            highWaterMark: 0,
+            // highWaterMark: 0,
             objectMode: true,
         });
     }

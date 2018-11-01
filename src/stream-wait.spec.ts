@@ -5,7 +5,7 @@ import { streamWait } from "./stream-wait";
 
 test("stream-wait", async t => {
     const stream = new PassThrough({
-        highWaterMark: 0,
+        // highWaterMark: 0,
         objectMode: true,
     });
 
@@ -24,7 +24,7 @@ test("stream-wait", async t => {
 
 test("stream-wait on end", async t => {
     const stream = new PassThrough({
-        highWaterMark: 0,
+        // highWaterMark: 0,
         objectMode: true,
     });
 

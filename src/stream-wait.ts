@@ -14,7 +14,7 @@ export function streamWait<T = any>(
         };
 
         const pipeStream = new PassThrough({
-            highWaterMark: 0,
+            // highWaterMark: 0,
             objectMode: true,
         });
         pipeStream.addListener("error", reject);

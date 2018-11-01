@@ -4,7 +4,7 @@ export function streamWait<T = any>(
     stream: Readable,
     waitFor?: (chunk: T) => boolean,
 ) {
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
         let resolveValue: T | undefined;
         const onClose = () => {
             pipeStream.removeListener("close", onClose);
@@ -14,19 +14,20 @@ export function streamWait<T = any>(
         };
 
         const pipeStream = new PassThrough({
-            objectMode: true,
             highWaterMark: 0,
+            objectMode: true,
         });
         pipeStream.addListener("error", reject);
         pipeStream.addListener("unpipe", () => pipeStream.destroy());
         if (waitFor) {
-            pipeStream.on("readable", () => {
-                const chunk = pipeStream.read();
-                if (chunk === null) return;
+            const onData = (chunk: T) => {
                 if (!waitFor(chunk)) return;
+                pipeStream.removeListener("data", onData);
                 resolveValue = chunk;
                 stream.unpipe(pipeStream);
-            });
+            };
+            pipeStream.addListener("data", onData);
+
         }
 
         pipeStream.addListener("close", onClose);

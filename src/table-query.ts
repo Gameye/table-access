@@ -44,7 +44,10 @@ export class TableQuery<TRow extends object> extends Readable {
         private readonly channel: string,
         private readonly queryDescriptors: Array<QueryDescriptor<TRow>>,
     ) {
-        super({ objectMode: true });
+        super({
+            highWaterMark: 0,
+            objectMode: true,
+        });
     }
 
     public _read(size: number): void {

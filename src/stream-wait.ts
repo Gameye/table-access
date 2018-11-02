@@ -1,38 +1,41 @@
 import { PassThrough, Readable } from "stream";
 
-export function streamWait<T = any>(
+export async function streamWait<T = any>(
     stream: Readable,
     waitFor?: (chunk: T) => boolean,
 ) {
-    return new Promise<T>((resolve, reject) => {
-        let resolveValue: T | undefined;
-        const onClose = () => {
-            pipeStream.removeListener("close", onClose);
-            stream.removeListener("close", onClose);
-
-            resolve(resolveValue);
-        };
-
-        const pipeStream = new PassThrough({
-            // highWaterMark: 0,
-            objectMode: true,
-        });
-        pipeStream.addListener("error", reject);
-        pipeStream.addListener("unpipe", () => pipeStream.destroy());
-        if (waitFor) {
-            const onData = (chunk: T) => {
-                if (!waitFor(chunk)) return;
-                pipeStream.removeListener("data", onData);
-                resolveValue = chunk;
-                stream.unpipe(pipeStream);
-            };
-            pipeStream.addListener("data", onData);
-
-        }
-
-        pipeStream.addListener("close", onClose);
-        stream.addListener("close", onClose);
-
-        stream.pipe(pipeStream);
+    const waitStream = new PassThrough({
+        // highWaterMark: 0,
+        objectMode: true,
     });
+
+    const resultPromise = new Promise<T | void>(
+        resolve => {
+            if (waitFor) waitStream.on("data", (chunk: T) => {
+                if (!waitFor(chunk)) return;
+                resolve(chunk);
+            });
+            waitStream.on("end", () => {
+                resolve(undefined);
+            });
+        },
+    );
+
+    const closePromise = new Promise(
+        (resolve, reject) => waitStream.
+            on("close", resolve).
+            on("error", reject),
+    );
+
+    stream.pipe(waitStream);
+    waitStream.resume();
+
+    const result = await resultPromise;
+
+    stream.unpipe(waitStream);
+    waitStream.destroy();
+
+    await closePromise;
+
+    return result;
 }

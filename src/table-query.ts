@@ -106,6 +106,8 @@ export class TableQuery<TRow extends object> extends Readable {
         await client.query(`UNLISTEN ${client.escapeIdentifier(channel)}`);
 
         client.release(error);
+
+        this.push(null);
     }
 
     private handleNotificationEvent = ({

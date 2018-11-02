@@ -64,6 +64,7 @@ test("TableQuery", t => using(PgContext.create(sql), async ({ pool }) => {
     {
         const event = streamWait(query, () => true);
         t.deepEqual(await event, {
+            type: "initial",
             row: OneRowDescriptor,
             initial: [
                 { id: 2, name: "two" },
@@ -78,6 +79,7 @@ INSERT INTO public.one(name)
 VALUES('three'), ('four')
 `);
         t.deepEqual(await event, {
+            type: "change",
             row: OneRowDescriptor,
             new: { id: 4, name: "four" },
             old: null,
@@ -92,6 +94,7 @@ SET name = 'four'
 WHERE id = 1
 `);
         t.deepEqual(await event, {
+            type: "change",
             row: OneRowDescriptor,
             new: { id: 1, name: "four" },
             old: null,
@@ -105,6 +108,7 @@ DELETE FROM public.one
 WHERE id = 1
 `);
         t.deepEqual(await event, {
+            type: "change",
             row: OneRowDescriptor,
             new: null,
             old: { id: 1, name: "four" },

@@ -58,12 +58,14 @@ export class TableQuery<TRow extends object> extends Readable {
     }
 
     public _destroy(
-        error: Error | null,
+        destroyError: Error | null,
         callback: (error: Error | null) => void,
     ): void {
-        this.teardown(error || undefined);
-
-        callback(error);
+        this.teardown(destroyError || undefined).
+            then(
+                () => callback(null),
+                error => callback(destroyError),
+            );
     }
 
     @synchronize()

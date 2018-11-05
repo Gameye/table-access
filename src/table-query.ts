@@ -44,16 +44,13 @@ export class TableQuery<TRow extends object> extends Readable {
         private readonly channel: string,
         private readonly queryDescriptors: Array<QueryDescriptor<TRow>>,
     ) {
-        super({
-            // highWaterMark: 0,
-            objectMode: true,
-        });
+        super({ objectMode: true });
     }
 
     public _read(size: number): void {
         if (this.shouldSetup) {
             this.shouldSetup = false;
-            this.setup().catch(error => this.emit("error", error));
+            this.setup().catch(error => this.destroy(error));
         }
     }
 
@@ -61,14 +58,13 @@ export class TableQuery<TRow extends object> extends Readable {
         destroyError: Error | null,
         callback: (error: Error | null) => void,
     ): void {
-        this.teardown(destroyError || undefined).
+        this.teardown().
             then(
-                () => callback(null),
-                error => callback(destroyError),
+                () => callback(destroyError),
+                error => callback(destroyError || error),
             );
     }
 
-    @synchronize()
     private async setup() {
         const { pool, channel, handleNotificationEvent, queryDescriptors } = this;
 
@@ -96,16 +92,14 @@ export class TableQuery<TRow extends object> extends Readable {
         }
     }
 
-    @synchronize()
     private async teardown(
-        error?: Error,
     ) {
         const { client, channel, handleNotificationEvent } = this;
 
         client.removeListener("notification", handleNotificationEvent);
         await client.query(`UNLISTEN ${client.escapeIdentifier(channel)}`);
 
-        client.release(error);
+        client.release();
 
         this.push(null);
     }

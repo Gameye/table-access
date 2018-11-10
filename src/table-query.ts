@@ -1,6 +1,5 @@
 import * as pg from "pg";
 import { Readable } from "stream";
-import { synchronize } from "synchronize-async";
 import { RowDescriptor } from "./row-descriptor";
 import { makeRowFilterFunction, makeRowFilterPg, RowFilter } from "./row-filter";
 
@@ -50,7 +49,7 @@ export class TableQuery<TRow extends object> extends Readable {
     public _read(size: number): void {
         if (this.shouldSetup) {
             this.shouldSetup = false;
-            this.setup().catch(error => this.destroy(error));
+            this.setup().catch(error => this.emit("error", error));
         }
     }
 

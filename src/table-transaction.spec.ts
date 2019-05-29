@@ -27,8 +27,9 @@ const OneRowDescriptor: RowDescriptor<OneRow> = {
 test(
     "TableTransaction#single",
     async t => using(PgContext.create(sql), async ({ pool }) => {
+        const client = await pool.connect();
         {
-            const row = await TableTransaction.execute(pool, q => q.single(
+            const row = await TableTransaction.execute(client, q => q.single(
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -36,7 +37,7 @@ test(
             t.deepEqual(row, { id: 2, name: "two" });
         }
         try {
-            const row = await TableTransaction.execute(pool, q => q.single(
+            const row = await TableTransaction.execute(client, q => q.single(
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -52,8 +53,9 @@ test(
 test(
     "TableTransaction#singleOrNull",
     async t => using(PgContext.create(sql), async ({ pool }) => {
+        const client = await pool.connect();
         {
-            const row = await TableTransaction.execute(pool, q => q.singleOrNull(
+            const row = await TableTransaction.execute(client, q => q.singleOrNull(
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -62,7 +64,7 @@ test(
         }
 
         {
-            const row = await TableTransaction.execute(pool, q => q.singleOrNull(
+            const row = await TableTransaction.execute(client, q => q.singleOrNull(
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -76,7 +78,8 @@ test(
 test(
     "TableTransaction#multiple",
     async t => using(PgContext.create(sql), async ({ pool }) => {
-        const rows = await TableTransaction.execute(pool, q => q.multiple(
+        const client = await pool.connect();
+        const rows = await TableTransaction.execute(client, q => q.multiple(
             OneRowDescriptor,
             { id: 2 },
         ));
@@ -88,8 +91,9 @@ test(
 test(
     "TableTransaction#insert",
     async t => using(PgContext.create(sql), async ({ pool }) => {
+        const client = await pool.connect();
         {
-            const row = await TableTransaction.execute(pool, q => q.insert(
+            const row = await TableTransaction.execute(client, q => q.insert(
                 OneRowDescriptor,
                 { name: "three" },
             ));
@@ -98,7 +102,7 @@ test(
         }
 
         try {
-            const row = await TableTransaction.execute(pool, q => q.insert(
+            const row = await TableTransaction.execute(client, q => q.insert(
                 OneRowDescriptor,
                 { id: 1, name: "four" },
             ));
@@ -110,7 +114,7 @@ test(
         }
 
         try {
-            const row = await TableTransaction.execute(pool, q => q.insert(
+            const row = await TableTransaction.execute(client, q => q.insert(
                 OneRowDescriptor,
                 { id: 5, name: "one" },
             ));
@@ -126,8 +130,9 @@ test(
 test(
     "TableTransaction#update",
     async t => using(PgContext.create(sql), async ({ pool }) => {
+        const client = await pool.connect();
         {
-            const row = await TableTransaction.execute(pool, q => q.update(
+            const row = await TableTransaction.execute(client, q => q.update(
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -137,7 +142,7 @@ test(
         }
 
         try {
-            const row = await TableTransaction.execute(pool, q => q.update(
+            const row = await TableTransaction.execute(client, q => q.update(
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -154,7 +159,8 @@ test(
 test(
     "TableTransaction#upsert",
     async t => using(PgContext.create(sql), async ({ pool }) => {
-        const row = await TableTransaction.execute(pool, q => q.upsert(
+        const client = await pool.connect();
+        const row = await TableTransaction.execute(client, q => q.upsert(
             OneRowDescriptor,
             { id: 2 },
             { name: "twee" },
@@ -167,7 +173,8 @@ test(
 test(
     "TableTransaction#delete",
     async t => using(PgContext.create(sql), async ({ pool }) => {
-        const row = await TableTransaction.execute(pool, q => q.delete(
+        const client = await pool.connect();
+        const row = await TableTransaction.execute(client, q => q.delete(
             OneRowDescriptor,
             { id: 2 },
         ));

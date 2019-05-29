@@ -50,7 +50,8 @@ const OneRowDescriptor: RowDescriptor<OneRow> = {
 };
 
 test("TableQuery", t => using(PgContext.create(sql), async ({ pool }) => {
-    const query = new TableQuery(pool, "row", [{
+    const client = await pool.connect();
+    const query = new TableQuery(client, "row", [{
         row: OneRowDescriptor,
         filter: {
             _ft: "or",
@@ -120,4 +121,6 @@ WHERE id = 1
         query.destroy();
         t.equal(await event, undefined);
     }
+
+    await client.release();
 }));

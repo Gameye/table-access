@@ -36,10 +36,9 @@ interface RowTriggerEvent<TRow extends object> {
 export class TableQuery<TRow extends object> extends Readable {
 
     private shouldSetup = true;
-    private client!: pg.PoolClient;
 
     constructor(
-        private readonly pool: pg.Pool,
+        private readonly client: pg.ClientBase,
         private readonly channel: string,
         private readonly queryDescriptors: Array<QueryDescriptor<TRow>>,
     ) {
@@ -65,9 +64,8 @@ export class TableQuery<TRow extends object> extends Readable {
     }
 
     private async setup() {
-        const { pool, channel, handleNotificationEvent, queryDescriptors } = this;
+        const { client, channel, handleNotificationEvent, queryDescriptors } = this;
 
-        const client = this.client = await pool.connect();
         try {
             await client.query(`BEGIN TRANSACTION;`);
 
@@ -97,8 +95,6 @@ export class TableQuery<TRow extends object> extends Readable {
 
         client.removeListener("notification", handleNotificationEvent);
         await client.query(`UNLISTEN ${client.escapeIdentifier(channel)}`);
-
-        client.release();
 
         this.push(null);
     }

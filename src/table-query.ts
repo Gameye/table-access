@@ -35,7 +35,8 @@ interface RowTriggerEvent<TRow extends object> {
 
 export class TableQuery<TRow extends object> extends Readable {
 
-    private shouldSetup = true;
+    private setupCalled = false;
+    private teardownCalled = false;
 
     constructor(
         private readonly client: pg.ClientBase,
@@ -46,16 +47,15 @@ export class TableQuery<TRow extends object> extends Readable {
     }
 
     public _read(size: number): void {
-        if (this.shouldSetup) {
-            this.shouldSetup = false;
-            this.setup().catch(error => this.emit("error", error));
-        }
+        if (this.setupCalled) return;
+        this.setup().catch(error => this.emit("error", error));
     }
 
     public _destroy(
         destroyError: Error | null,
         callback: (error: Error | null) => void,
     ): void {
+        if (this.teardownCalled) return;
         this.teardown().
             then(
                 () => callback(destroyError),
@@ -64,6 +64,8 @@ export class TableQuery<TRow extends object> extends Readable {
     }
 
     private async setup() {
+        this.setupCalled = true;
+
         const { client, channel, handleNotificationEvent, queryDescriptors } = this;
 
         try {
@@ -73,6 +75,8 @@ export class TableQuery<TRow extends object> extends Readable {
             client.addListener("notification", handleNotificationEvent);
 
             await Promise.all(queryDescriptors.map(async ({ row, filter }) => {
+                if (this.teardownCalled) return;
+
                 const rows = await this.fetch(row, filter);
                 this.push({
                     type: "initial",
@@ -91,6 +95,8 @@ export class TableQuery<TRow extends object> extends Readable {
 
     private async teardown(
     ) {
+        this.teardownCalled = true;
+
         const { client, channel, handleNotificationEvent } = this;
 
         client.removeListener("notification", handleNotificationEvent);
@@ -116,6 +122,8 @@ export class TableQuery<TRow extends object> extends Readable {
         }
 
         for (const { row, filter } of queryDescriptors) {
+            if (this.teardownCalled) return;
+
             if (event.schema !== row.schema) continue;
             if (event.table !== row.table) continue;
 

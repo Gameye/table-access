@@ -117,7 +117,7 @@ WHERE id = 1
     }
 
     {
-        const event = streamWait(query);
+        const event = streamWait(query, () => true);
         query.destroy();
         t.equal(await event, undefined);
     }

@@ -1,39 +1,32 @@
 import * as test from "blue-tape";
 import { PassThrough } from "stream";
-import * as util from "util";
 import { streamWait } from "./stream-wait";
 
 test("stream-wait", async t => {
-    const stream = new PassThrough({
-        // highWaterMark: 0,
-        objectMode: true,
-    });
+    const stream = new PassThrough({ objectMode: true });
 
-    const write = util.promisify(stream.write.bind(stream));
-    const end = util.promisify(stream.end.bind(stream));
+    const write = (chunk: any) => new Promise(
+        (resolve, reject) => stream.write(chunk, error => error ? reject(error) : resolve()),
+    );
+    const end = () => new Promise(
+        resolve => stream.end(resolve),
+    );
 
-    const wait = streamWait<string>(stream, (chunk) => chunk === "bb");
+    write("aa");
+    write("bb");
+    write("cc");
 
-    await write("aa");
-    await write("bb");
+    {
+        const wait = streamWait<string>(stream, (c) => c === "bb");
+        const chunk = await wait;
+        t.equal(chunk, "bb");
+    }
 
-    await wait;
-
-    await end();
-});
-
-test("stream-wait on end", async t => {
-    const stream = new PassThrough({
-        // highWaterMark: 0,
-        objectMode: true,
-    });
-
-    const write = util.promisify(stream.write.bind(stream));
-    const end = util.promisify(stream.end.bind(stream));
-
-    const wait = streamWait<string>(stream);
+    {
+        const wait = streamWait<string>(stream, () => true);
+        const chunk = await wait;
+        t.equal(chunk, "cc");
+    }
 
     await end();
-
-    await wait;
 });

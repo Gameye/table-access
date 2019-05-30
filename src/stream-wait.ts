@@ -1,41 +1,24 @@
-import { PassThrough, Readable } from "stream";
+import { Readable } from "stream";
 
+/**
+ * Read stream until the waitFor function returns true, then
+ * pause the stream.
+ * @param stream stream to read
+ * @param waitFor return true to resolve
+ */
 export async function streamWait<T = any>(
     stream: Readable,
-    waitFor?: (chunk: T) => boolean,
+    waitFor: (chunk: T) => boolean,
 ) {
-    const waitStream = new PassThrough({
-        // highWaterMark: 0,
-        objectMode: true,
-    });
-
-    const resultPromise = new Promise<T | void>(
-        resolve => {
-            if (waitFor) waitStream.on("data", (chunk: T) => {
-                if (!waitFor(chunk)) return;
+    return new Promise<T>(resolve => {
+        stream.addListener("data", onData);
+        stream.resume();
+        function onData(chunk: T) {
+            if (waitFor(chunk)) {
+                stream.pause();
+                stream.removeListener("data", onData);
                 resolve(chunk);
-            });
-            waitStream.on("end", () => {
-                resolve(undefined);
-            });
-        },
-    );
-
-    const closePromise = new Promise(
-        (resolve, reject) => waitStream.
-            on("close", resolve).
-            on("error", reject),
-    );
-
-    stream.pipe(waitStream);
-    waitStream.resume();
-
-    const result = await resultPromise;
-
-    stream.unpipe(waitStream);
-    waitStream.destroy();
-
-    await closePromise;
-
-    return result;
+            }
+        }
+    });
 }

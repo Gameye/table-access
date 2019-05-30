@@ -51,77 +51,81 @@ const OneRowDescriptor: RowDescriptor<OneRow> = {
 
 test("TableQuery", t => using(PgContext.create(sql), async ({ pool }) => {
     const client = await pool.connect();
-    const query = new TableQuery(client, "row", [{
-        row: OneRowDescriptor,
-        filter: {
-            _ft: "or",
-            filter: [
-                { name: "two" },
-                { name: "four" },
-            ],
-        },
-    }]);
 
-    {
-        const event = streamWait(query, () => true);
-        t.deepEqual(await event, {
-            type: "initial",
+    try {
+        const query = new TableQuery(client, "row", [{
             row: OneRowDescriptor,
-            initial: [
-                { id: 2, name: "two" },
-            ],
-        });
-    }
+            filter: {
+                _ft: "or",
+                filter: [
+                    { name: "two" },
+                    { name: "four" },
+                ],
+            },
+        }]);
 
-    {
-        const event = streamWait(query, () => true);
-        await pool.query(`
+        {
+            const event = streamWait(query, () => true);
+            t.deepEqual(await event, {
+                type: "initial",
+                row: OneRowDescriptor,
+                initial: [
+                    { id: 2, name: "two" },
+                ],
+            });
+        }
+
+        {
+            const event = streamWait(query, () => true);
+            await pool.query(`
 INSERT INTO public.one(name)
 VALUES('three'), ('four')
 `);
-        t.deepEqual(await event, {
-            type: "change",
-            row: OneRowDescriptor,
-            new: { id: 4, name: "four" },
-            old: null,
-        });
-    }
+            t.deepEqual(await event, {
+                type: "change",
+                row: OneRowDescriptor,
+                new: { id: 4, name: "four" },
+                old: null,
+            });
+        }
 
-    {
-        const event = streamWait(query, () => true);
-        await pool.query(`
+        {
+            const event = streamWait(query, () => true);
+            await pool.query(`
 UPDATE public.one
 SET name = 'four'
 WHERE id = 1
 `);
-        t.deepEqual(await event, {
-            type: "change",
-            row: OneRowDescriptor,
-            new: { id: 1, name: "four" },
-            old: null,
-        });
-    }
+            t.deepEqual(await event, {
+                type: "change",
+                row: OneRowDescriptor,
+                new: { id: 1, name: "four" },
+                old: null,
+            });
+        }
 
-    {
-        const event = streamWait(query, () => true);
-        await pool.query(`
+        {
+            const event = streamWait(query, () => true);
+            await pool.query(`
 DELETE FROM public.one
 WHERE id = 1
 `);
-        t.deepEqual(await event, {
-            type: "change",
-            row: OneRowDescriptor,
-            new: null,
-            old: { id: 1, name: "four" },
-        });
+            t.deepEqual(await event, {
+                type: "change",
+                row: OneRowDescriptor,
+                new: null,
+                old: { id: 1, name: "four" },
+            });
+        }
+
+        await new Promise(
+            (resolve, reject) => query.
+                once("close", resolve).
+                once("error", reject).
+                destroy(),
+        );
     }
-
-    await new Promise(
-        (resolve, reject) => query.
-            once("close", resolve).
-            once("error", reject).
-            destroy(),
-    );
-
-    await client.release();
+    finally {
+        client.release();
+    }
 }));

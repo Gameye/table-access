@@ -116,11 +116,12 @@ WHERE id = 1
         });
     }
 
-    {
-        const event = streamWait(query, () => true);
-        query.destroy();
-        t.equal(await event, undefined);
-    }
+    await new Promise(
+        (resolve, reject) => query.
+            once("close", resolve).
+            once("error", reject).
+            destroy(),
+    );
 
     await client.release();
 }));

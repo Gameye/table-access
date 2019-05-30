@@ -47,6 +47,7 @@ test(
         catch (err) {
             t.ok(err instanceof UnexpectedRowCountError);
         }
+        client.release();
     }),
 );
 

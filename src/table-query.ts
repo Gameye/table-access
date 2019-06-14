@@ -48,7 +48,7 @@ export class TableQuery<TRow extends object> extends Readable {
 
     public _read(size: number): void {
         if (this.setupCalled) return;
-        this.setup().catch(error => this.emit("error", error));
+        this.setup().catch(error => this.destroy(error));
     }
 
     public _destroy(
@@ -102,6 +102,7 @@ export class TableQuery<TRow extends object> extends Readable {
         client.removeListener("notification", handleNotificationEvent);
         await client.query(`UNLISTEN ${client.escapeIdentifier(channel)}`);
 
+        // gracefully end this reader
         this.push(null);
     }
 

@@ -71,10 +71,7 @@ export class TableQuery<TRow extends object> extends Readable {
         try {
             await client.query(`BEGIN TRANSACTION;`);
 
-            await client.query(`LISTEN ${client.escapeIdentifier(channel)}`);
-            client.addListener("notification", handleNotificationEvent);
-
-            await Promise.all(queryDescriptors.map(async ({ row, filter }) => {
+            for (const { row, filter } of queryDescriptors) {
                 if (this.teardownCalled) return;
 
                 const rows = await this.fetch(row, filter);
@@ -83,7 +80,10 @@ export class TableQuery<TRow extends object> extends Readable {
                     row,
                     initial: rows,
                 } as TableQueryInitialEvent<TRow>);
-            }));
+            }
+
+            await client.query(`LISTEN ${client.escapeIdentifier(channel)}`);
+            client.addListener("notification", handleNotificationEvent);
 
             await client.query(`COMMIT TRANSACTION;`);
         }
@@ -154,6 +154,7 @@ export class TableQuery<TRow extends object> extends Readable {
 SELECT row_to_json(r) AS o
 FROM "${descriptor.schema}"."${descriptor.table}" AS r
 ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
+FOR SHARE
 ;`, filterResult.param);
         const { rows } = result;
         return rows.map(row => row.o);

@@ -25,17 +25,17 @@
     "pg-context": "^1.1.0",
     "tape": "^4.10.2",
     "ts-node": "^7.0.1",
-    "tslint": "^5.16.0",
-    "typescript": "^3.5.1"
+    "tslint": "^5.17.0",
+    "typescript": "^3.5.2"
   },
   "dependencies": {
-    "@types/node": "^10.14.7",
+    "@types/node": "^10.14.9",
     "@types/pg": "^7.4.14",
     "dispose": "^1.0.3",
     "pg": "^7.11.0",
     "readable-stream": "^3.4.0",
     "synchronize-async": "^1.0.11",
-    "tslib": "^1.9.3"
+    "tslib": "^1.10.0"
   },
   "engines": {
     "node": "^10"

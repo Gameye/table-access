@@ -1,6 +1,6 @@
 {
   "name": "table-access",
-  "version": "1.2.4",
+  "version": "1.2.6",
   "description": "",
   "main": "./node/main.js",
   "module": "./module/main.js",
@@ -33,7 +33,6 @@
     "@types/pg": "^7.4.14",
     "dispose": "^1.0.3",
     "pg": "^7.11.0",
-    "readable-stream": "^3.4.0",
     "synchronize-async": "^1.0.11",
     "tslib": "^1.10.0"
   },

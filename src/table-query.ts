@@ -37,9 +37,10 @@ export class TableQuery<TRow extends object> extends Readable {
 
     private setupCalled = false;
     private teardownCalled = false;
+    private client?: pg.PoolClient;
 
     constructor(
-        private readonly client: pg.ClientBase,
+        private readonly pool: pg.Pool,
         private readonly channel: string,
         private readonly queryDescriptors: Array<QueryDescriptor<TRow>>,
     ) {
@@ -66,7 +67,11 @@ export class TableQuery<TRow extends object> extends Readable {
     private async setup() {
         this.setupCalled = true;
 
-        const { client, channel, handleNotificationEvent, queryDescriptors } = this;
+        const { pool, channel, queryDescriptors } = this;
+
+        const client = this.client = await pool.connect();
+        client.addListener("notification", this.handleNotificationEvent);
+        client.addListener("error", this.handleErrorEvent);
 
         try {
             await client.query(`BEGIN TRANSACTION;`);
@@ -83,8 +88,6 @@ export class TableQuery<TRow extends object> extends Readable {
             }
 
             await client.query(`LISTEN ${client.escapeIdentifier(channel)}`);
-            client.addListener("notification", handleNotificationEvent);
-
             await client.query(`COMMIT TRANSACTION;`);
         }
         catch (error) {
@@ -94,17 +97,24 @@ export class TableQuery<TRow extends object> extends Readable {
     }
 
     private async teardown(
+        destroyError?: Error,
     ) {
         this.teardownCalled = true;
 
-        const { client, channel, handleNotificationEvent } = this;
+        const { client, channel } = this;
 
-        client.removeListener("notification", handleNotificationEvent);
-        await client.query(`UNLISTEN ${client.escapeIdentifier(channel)}`);
+        if (client) {
+            await client.query(`UNLISTEN ${client.escapeIdentifier(channel)}`);
+            client.removeListener("notification", this.handleNotificationEvent);
+            client.removeListener("error", this.handleErrorEvent);
+            client.release(destroyError);
+        }
 
         // gracefully end this reader
         this.push(null);
     }
+
+    private handleErrorEvent = (error: any) => this.destroy(error);
 
     private handleNotificationEvent = ({
         channel, payload,
@@ -149,6 +159,7 @@ export class TableQuery<TRow extends object> extends Readable {
         filter: RowFilter<TRow> | Partial<TRow>,
     ): Promise<TRow[]> {
         const { client } = this;
+        if (!client) throw new Error("client missing");
 
         const filterResult = makeRowFilterPg(filter, "r");
         const result = await client.query(`

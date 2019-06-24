@@ -26,7 +26,7 @@ const OneRowDescriptor: RowDescriptor<OneRow> = {
 
 test(
     "TableTransaction#single",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql, { user: "postgres" }), async ({ pool }) => {
         {
             const row = await TableTransaction.execute(pool, q => q.single(
                 OneRowDescriptor,
@@ -75,7 +75,7 @@ test(
 
 test(
     "TableTransaction#multiple",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql, { user: "postgres" }), async ({ pool }) => {
         const rows = await TableTransaction.execute(pool, q => q.multiple(
             OneRowDescriptor,
             { id: 2 },
@@ -87,7 +87,7 @@ test(
 
 test(
     "TableTransaction#insert",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
+    async t => using(PgContext.create(sql, { user: "postgres" }), async ({ pool }) => {
         {
             const row = await TableTransaction.execute(pool, q => q.insert(
                 OneRowDescriptor,

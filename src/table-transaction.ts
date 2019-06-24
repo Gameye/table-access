@@ -6,19 +6,22 @@ import { makeRowFilterPg, RowFilter } from "./row-filter";
 export class TableTransaction {
 
     public static async execute<T>(
-        client: pg.ClientBase,
+        pool: pg.Pool,
         job: (context: TableTransaction) => Promise<T>,
     ): Promise<T> {
+        const client = await pool.connect();
         const context = new this(client);
 
         await client.query("BEGIN TRANSACTION;");
         try {
             const result = await job(context);
             await client.query("COMMIT TRANSACTION;");
+            client.release();
             return result;
         }
         catch (err) {
             await client.query("ROLLBACK TRANSACTION;");
+            client.release(err);
             throw err;
         }
     }

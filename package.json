@@ -21,21 +21,17 @@
     "@types/blue-tape": "^0.1.33",
     "@types/tape": "^4.2.33",
     "blue-tape": "^1.0.0",
-    "nyc": "^14.1.1",
+    "nyc": "^15.1.0",
     "pg-context": "^1.1.0",
-    "tape": "^4.10.2",
-    "ts-node": "^8.3.0",
-    "tslint": "^5.18.0",
-    "typescript": "^3.5.2"
+    "tape": "^5.5.2",
+    "ts-node": "^10.7.0",
+    "tslint": "^6.1.3",
+    "typescript": "^4.6.2"
   },
   "dependencies": {
-    "@types/pg": "^7.4.14",
+    "@types/pg": "^8.6.5",
     "dispose": "^1.0.3",
-    "pg": "^7.11.0",
-    "synchronize-async": "^1.0.11",
-    "tslib": "^1.10.0"
-  },
-  "engines": {
-    "node": "^10"
+    "pg": "^8.7.3",
+    "tslib": "^2.3.1"
   }
 }

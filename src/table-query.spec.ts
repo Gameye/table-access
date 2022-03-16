@@ -1,4 +1,4 @@
-import * as test from "blue-tape";
+import test from "tape-promise/tape.js";
 import { using } from "dispose";
 import { PgContext } from "pg-context";
 import { RowDescriptor } from "./row-descriptor";
@@ -49,7 +49,7 @@ const OneRowDescriptor: RowDescriptor<OneRow> = {
     table: "one",
 };
 
-test("TableQuery", t => using(PgContext.create(sql), async ({ pool }) => {
+test("TableQuery", async t => using(PgContext.create(sql), async ({ pool }) => {
     const query = new TableQuery(pool, "row", [{
         row: OneRowDescriptor,
         filter: {

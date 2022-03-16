@@ -1,11 +1,11 @@
-import * as test from "blue-tape";
+import test from "tape-promise/tape.js";
 import { PassThrough } from "stream";
 import { streamWait } from "./stream-wait";
 
 test("stream-wait", async t => {
     const stream = new PassThrough({ objectMode: true });
 
-    const write = (chunk: any) => new Promise(
+    const write = (chunk: any) => new Promise<void>(
         (resolve, reject) => stream.write(chunk, error => error ? reject(error) : resolve()),
     );
     const end = () => new Promise(

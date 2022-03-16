@@ -1,4 +1,4 @@
-import * as test from "blue-tape";
+import test from "tape-promise/tape.js";
 import {
     makeRowFilterFunction, makeRowFilterPg, normalizeRowFilter,
 } from "./row-filter";
@@ -19,34 +19,34 @@ test("row-filter pg eq", async (t) => {
     t.deepEqual(makeRowFilterPg({
         _ft: "eq", field: "a", value: null,
     }, "t"), {
-            filterSql: `"t"."a" IS NULL`,
-            param: [],
-            paramCount: 0,
-        });
+        filterSql: `"t"."a" IS NULL`,
+        param: [],
+        paramCount: 0,
+    });
 
     t.deepEqual(makeRowFilterPg({
         _ft: "eq", field: "a", value: null, invert: true,
     }, "t", 10), {
-            filterSql: `"t"."a" IS NOT NULL`,
-            param: [],
-            paramCount: 0,
-        });
+        filterSql: `"t"."a" IS NOT NULL`,
+        param: [],
+        paramCount: 0,
+    });
 
     t.deepEqual(makeRowFilterPg({
         _ft: "eq", field: "a", value: 0,
     }, "t"), {
-            filterSql: `"t"."a" = $1`,
-            param: [0],
-            paramCount: 1,
-        });
+        filterSql: `"t"."a" = $1`,
+        param: [0],
+        paramCount: 1,
+    });
 
     t.deepEqual(makeRowFilterPg({
         _ft: "eq", field: "a", value: "", invert: true,
     }, "t", 10), {
-            filterSql: `"t"."a" <> $11`,
-            param: [""],
-            paramCount: 1,
-        });
+        filterSql: `"t"."a" <> $11`,
+        param: [""],
+        paramCount: 1,
+    });
 
 });
 
@@ -55,34 +55,34 @@ test("row-filter pg min max", async (t) => {
     t.deepEqual(makeRowFilterPg({
         _ft: "min", field: "a", value: 0,
     }, "t"), {
-            filterSql: `"t"."a" >= $1`,
-            param: [0],
-            paramCount: 1,
-        });
+        filterSql: `"t"."a" >= $1`,
+        param: [0],
+        paramCount: 1,
+    });
 
     t.deepEqual(makeRowFilterPg({
         _ft: "min", field: "a", value: "", exclusive: true,
     }, "t", 10), {
-            filterSql: `"t"."a" > $11`,
-            param: [""],
-            paramCount: 1,
-        });
+        filterSql: `"t"."a" > $11`,
+        param: [""],
+        paramCount: 1,
+    });
 
     t.deepEqual(makeRowFilterPg({
         _ft: "max", field: "a", value: "",
     }, "t"), {
-            filterSql: `"t"."a" <= $1`,
-            param: [""],
-            paramCount: 1,
-        });
+        filterSql: `"t"."a" <= $1`,
+        param: [""],
+        paramCount: 1,
+    });
 
     t.deepEqual(makeRowFilterPg({
         _ft: "max", field: "a", value: 0, exclusive: true,
     }, "t", 10), {
-            filterSql: `"t"."a" < $11`,
-            param: [0],
-            paramCount: 1,
-        });
+        filterSql: `"t"."a" < $11`,
+        param: [0],
+        paramCount: 1,
+    });
 
 });
 

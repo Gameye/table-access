@@ -1,39 +1,77 @@
 export type RowFilter<Row> =
     AndFilter<Row> | OrFilter<Row> |
-    MaximumFilter<Row, keyof Row> | MinimumFilter<Row, keyof Row> |
-    EqualFilter<Row, keyof Row>;
+    MaximumFilter<Row> | MinimumFilter<Row> |
+    EqualFilter<Row>;
+export function isRowFilter<Row>(
+    rowFilter: RowFilter<Row> | Partial<Row>,
+): rowFilter is RowFilter<Row> {
+    return "type" in rowFilter && (
+        isAndFilter(rowFilter) ||
+        isOrFilter(rowFilter) ||
+        isMaximumFilter(rowFilter) ||
+        isMinimumFilter(rowFilter) ||
+        isEqualFilter(rowFilter)
+    );
+}
 
-export interface EqualFilter<Row, Field extends keyof Row> {
-    _ft: "eq";
+export interface EqualFilter<Row, Field extends keyof Row = keyof Row> {
+    type: "eq";
     field: Field;
     value: Row[Field];
     invert?: boolean;
 }
-export interface MinimumFilter<Row, Field extends keyof Row> {
-    _ft: "min";
+export function isEqualFilter<Row>(
+    rowFilter: RowFilter<Row>,
+): rowFilter is EqualFilter<Row> {
+    return rowFilter.type == "eq" &&
+        "field" in rowFilter &&
+        "value" in rowFilter;
+}
+export interface MinimumFilter<Row, Field extends keyof Row = keyof Row> {
+    type: "min";
     field: Field;
     value: Row[Field];
     exclusive?: boolean;
 }
-export interface MaximumFilter<Row, Field extends keyof Row> {
-    _ft: "max";
+export function isMinimumFilter<Row>(
+    rowFilter: RowFilter<Row>,
+): rowFilter is MinimumFilter<Row> {
+    return rowFilter.type == "min" &&
+        "field" in rowFilter &&
+        "value" in rowFilter;
+}
+export interface MaximumFilter<Row, Field extends keyof Row = keyof Row> {
+    type: "max";
     field: Field;
     value: Row[Field];
     exclusive?: boolean;
+}
+export function isMaximumFilter<Row>(
+    rowFilter: RowFilter<Row>,
+): rowFilter is MaximumFilter<Row> {
+    return rowFilter.type == "max" &&
+        "field" in rowFilter &&
+        "value" in rowFilter;
 }
 export interface AndFilter<Row> {
-    _ft: "and";
+    type: "and";
     filter: Array<RowFilter<Row> | Partial<Row>>;
+}
+export function isAndFilter<Row>(
+    rowFilter: RowFilter<Row>,
+): rowFilter is AndFilter<Row> {
+    return rowFilter.type == "and" &&
+        "filter" in rowFilter;
 }
 export interface OrFilter<Row> {
-    _ft: "or";
+    type: "or";
     filter: Array<RowFilter<Row> | Partial<Row>>;
 }
-
-export function isRowFilter<Row>(
-    rowFilter: RowFilter<Row> | Partial<Row>,
-): rowFilter is RowFilter<Row> {
-    return "_ft" in rowFilter;
+export function isOrFilter<Row>(
+    rowFilter: RowFilter<Row>,
+): rowFilter is OrFilter<Row> {
+    return rowFilter.type == "or" &&
+        "filter" in rowFilter;
 }
 
 export function normalizeRowFilter<Row>(
@@ -43,11 +81,11 @@ export function normalizeRowFilter<Row>(
 
     const filter = Object.entries(rowFilter).map(
         ([field, value]) =>
-            ({ _ft: "eq", field, value } as EqualFilter<Row, keyof Row>),
+            ({ type: "eq", field, value } as EqualFilter<Row, keyof Row>),
     );
 
     return {
-        _ft: "and",
+        type: "and",
         filter,
     };
 }
@@ -61,11 +99,11 @@ export interface SqlFilterResult {
 export function makeRowFilterPg<Row>(
     rowFilter: RowFilter<Row> | Partial<Row>,
     tableName: string,
-    paramOffset: number = 0,
+    paramOffset = 0,
 ): SqlFilterResult {
     rowFilter = normalizeRowFilter(rowFilter);
 
-    switch (rowFilter._ft) {
+    switch (rowFilter.type) {
         case "eq": {
             const { field, value, invert } = rowFilter;
             if (value === null) {
@@ -124,7 +162,7 @@ export function makeRowFilterPg<Row>(
 
         case "or":
         case "and": {
-            const { _ft, filter } = rowFilter;
+            const { type, filter } = rowFilter;
             let paramCount = 0;
             const subRowFilter = filter.map(
                 f => {
@@ -140,13 +178,13 @@ export function makeRowFilterPg<Row>(
 
             const nakedFilterSql = subRowFilter.
                 map(f => f.filterSql).
-                join(` ${_ft.toUpperCase()} `);
+                join(` ${type.toUpperCase()} `);
             const filterSql = subRowFilter.length > 1 ? `(${nakedFilterSql})` : nakedFilterSql;
 
             return { filterSql, param, paramCount };
         }
 
-        default: throw new Error(`invalid _ft`);
+        default: throw new Error("invalid type");
     }
 
 }
@@ -156,7 +194,7 @@ export function makeRowFilterFunction<Row>(
 ): (row: Row) => boolean {
     rowFilter = normalizeRowFilter(rowFilter);
 
-    switch (rowFilter._ft) {
+    switch (rowFilter.type) {
         case "eq": {
             const { field, value, invert } = rowFilter;
             if (invert) return (row: Row) => row[field] !== value;
@@ -187,6 +225,6 @@ export function makeRowFilterFunction<Row>(
             return (row: Row) => fns.every(fn => fn(row));
         }
 
-        default: throw new Error(`invalid _ft`);
+        default: throw new Error("invalid type");
     }
 }

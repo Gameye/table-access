@@ -1,6 +1,5 @@
 {
   "name": "table-access",
-  "version": "2.0.0",
   "description": "",
   "sideEffects": false,
   "type": "module",

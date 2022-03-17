@@ -5,11 +5,11 @@ export interface TestContext {
 }
 
 export async function withTestContext(job: (context: TestContext) => Promise<void>) {
-    const dbName = `db_${new Date().valueOf()}`
+    const dbName = `db_${new Date().valueOf()}`;
     const client = new pg.Client({
         user: "postgres",
         host: "localhost",
-    })
+    });
     await client.connect();
     try {
         await client.query(`CREATE DATABASE ${client.escapeIdentifier(dbName)};`);
@@ -23,16 +23,15 @@ export async function withTestContext(job: (context: TestContext) => Promise<voi
                 await job({ pool });
             }
             finally {
-                await pool.end()
+                await pool.end();
             }
-
         }
         finally {
             await client.query(`DROP DATABASE ${client.escapeIdentifier(dbName)};`);
         }
     }
     finally {
-        await client.end()
+        await client.end();
     }
 
 }

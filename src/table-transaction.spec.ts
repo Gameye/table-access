@@ -16,7 +16,7 @@ async function initializeMocks(pool: pg.Pool) {
     VALUES('one'), ('two');
     `;
 
-    await pool.query(sql)
+    await pool.query(sql);
 }
 
 interface OneRow {
@@ -120,7 +120,7 @@ test(
         }
         catch (error) {
             assert(error instanceof pg.DatabaseError);
-            t.equal(error.code, "23505")
+            t.equal(error.code, "23505");
         }
 
         try {
@@ -133,7 +133,7 @@ test(
         }
         catch (error) {
             assert(error instanceof pg.DatabaseError);
-            t.equal(error.code, "23505")
+            t.equal(error.code, "23505");
         }
     }),
 );

@@ -1,7 +1,5 @@
 import test from "tape-promise/tape.js";
-import {
-    makeRowFilterFunction, makeRowFilterPg, normalizeRowFilter
-} from "./row-filter.js";
+import { makeRowFilterFunction, makeRowFilterPg, normalizeRowFilter } from "./row-filter.js";
 
 test("row-filter normalize", async (t) => {
     t.deepEqual(normalizeRowFilter({ a: null }), {
@@ -19,7 +17,7 @@ test("row-filter pg eq", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "eq", field: "a", value: null,
     }, "t"), {
-        filterSql: `"t"."a" IS NULL`,
+        filterSql: "\"t\".\"a\" IS NULL",
         param: [],
         paramCount: 0,
     });
@@ -27,7 +25,7 @@ test("row-filter pg eq", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "eq", field: "a", value: null, invert: true,
     }, "t", 10), {
-        filterSql: `"t"."a" IS NOT NULL`,
+        filterSql: "\"t\".\"a\" IS NOT NULL",
         param: [],
         paramCount: 0,
     });
@@ -35,7 +33,7 @@ test("row-filter pg eq", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "eq", field: "a", value: 0,
     }, "t"), {
-        filterSql: `"t"."a" = $1`,
+        filterSql: "\"t\".\"a\" = $1",
         param: [0],
         paramCount: 1,
     });
@@ -43,7 +41,7 @@ test("row-filter pg eq", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "eq", field: "a", value: "", invert: true,
     }, "t", 10), {
-        filterSql: `"t"."a" <> $11`,
+        filterSql: "\"t\".\"a\" <> $11",
         param: [""],
         paramCount: 1,
     });
@@ -55,7 +53,7 @@ test("row-filter pg min max", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "min", field: "a", value: 0,
     }, "t"), {
-        filterSql: `"t"."a" >= $1`,
+        filterSql: "\"t\".\"a\" >= $1",
         param: [0],
         paramCount: 1,
     });
@@ -63,7 +61,7 @@ test("row-filter pg min max", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "min", field: "a", value: "", exclusive: true,
     }, "t", 10), {
-        filterSql: `"t"."a" > $11`,
+        filterSql: "\"t\".\"a\" > $11",
         param: [""],
         paramCount: 1,
     });
@@ -71,7 +69,7 @@ test("row-filter pg min max", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "max", field: "a", value: "",
     }, "t"), {
-        filterSql: `"t"."a" <= $1`,
+        filterSql: "\"t\".\"a\" <= $1",
         param: [""],
         paramCount: 1,
     });
@@ -79,7 +77,7 @@ test("row-filter pg min max", async (t) => {
     t.deepEqual(makeRowFilterPg({
         type: "max", field: "a", value: 0, exclusive: true,
     }, "t", 10), {
-        filterSql: `"t"."a" < $11`,
+        filterSql: "\"t\".\"a\" < $11",
         param: [0],
         paramCount: 1,
     });
@@ -98,7 +96,7 @@ test("row-filter pg and or", async (t) => {
             }],
         }, "t"),
         {
-            filterSql: `"t"."a" = $1`,
+            filterSql: "\"t\".\"a\" = $1",
             param: [""],
             paramCount: 1,
         },
@@ -118,7 +116,7 @@ test("row-filter pg and or", async (t) => {
             }],
         }, "t", 20),
         {
-            filterSql: `("t"."a" = $21 AND "t"."b" = $22)`,
+            filterSql: "(\"t\".\"a\" = $21 AND \"t\".\"b\" = $22)",
             param: ["", 0],
             paramCount: 2,
         },
@@ -146,7 +144,7 @@ test("row-filter pg and or", async (t) => {
             }],
         }, "t"),
         {
-            filterSql: `("t"."a" = $1 OR ("t"."b" >= $2 AND "t"."b" < $3))`,
+            filterSql: "(\"t\".\"a\" = $1 OR (\"t\".\"b\" >= $2 AND \"t\".\"b\" < $3))",
             param: ["yes", -10, 10],
             paramCount: 3,
         },
@@ -181,13 +179,13 @@ test("row-filter pg and or", async (t) => {
             }],
         }, "t"),
         {
-            filterSql: `(` +
-                `"t"."a" = $1 OR ` +
-                `("t"."b" >= $2 AND "t"."b" < $3) OR ` +
-                `"t"."a" = $4 OR ` +
-                `("t"."a" = $5 AND "t"."b" = $6) OR ` +
-                `"t"."b" IS NULL` +
-                `)`,
+            filterSql: "(" +
+                "\"t\".\"a\" = $1 OR " +
+                "(\"t\".\"b\" >= $2 AND \"t\".\"b\" < $3) OR " +
+                "\"t\".\"a\" = $4 OR " +
+                "(\"t\".\"a\" = $5 AND \"t\".\"b\" = $6) OR " +
+                "\"t\".\"b\" IS NULL" +
+                ")",
             param: ["yes", -10, 10, "ok", "cool", -100],
             paramCount: 6,
         },

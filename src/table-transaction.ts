@@ -4,7 +4,6 @@ import { UnexpectedRowCountError } from "./error.js";
 import { RowDescriptor } from "./row-descriptor.js";
 import { makeRowFilterPg, RowFilter } from "./row-filter.js";
 
-
 export class Transaction {
 
     public static async with<T>(

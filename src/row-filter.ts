@@ -11,7 +11,7 @@ export function isRowFilter<Row>(
         isMaximumFilter(rowFilter) ||
         isMinimumFilter(rowFilter) ||
         isEqualFilter(rowFilter)
-    )
+    );
 }
 
 export interface EqualFilter<Row, Field extends keyof Row = keyof Row> {
@@ -21,7 +21,7 @@ export interface EqualFilter<Row, Field extends keyof Row = keyof Row> {
     invert?: boolean;
 }
 export function isEqualFilter<Row>(
-    rowFilter: RowFilter<Row>
+    rowFilter: RowFilter<Row>,
 ): rowFilter is EqualFilter<Row> {
     return rowFilter.type == "eq" &&
         "field" in rowFilter &&
@@ -34,7 +34,7 @@ export interface MinimumFilter<Row, Field extends keyof Row = keyof Row> {
     exclusive?: boolean;
 }
 export function isMinimumFilter<Row>(
-    rowFilter: RowFilter<Row>
+    rowFilter: RowFilter<Row>,
 ): rowFilter is MinimumFilter<Row> {
     return rowFilter.type == "min" &&
         "field" in rowFilter &&
@@ -47,7 +47,7 @@ export interface MaximumFilter<Row, Field extends keyof Row = keyof Row> {
     exclusive?: boolean;
 }
 export function isMaximumFilter<Row>(
-    rowFilter: RowFilter<Row>
+    rowFilter: RowFilter<Row>,
 ): rowFilter is MaximumFilter<Row> {
     return rowFilter.type == "max" &&
         "field" in rowFilter &&
@@ -58,7 +58,7 @@ export interface AndFilter<Row> {
     filter: Array<RowFilter<Row> | Partial<Row>>;
 }
 export function isAndFilter<Row>(
-    rowFilter: RowFilter<Row>
+    rowFilter: RowFilter<Row>,
 ): rowFilter is AndFilter<Row> {
     return rowFilter.type == "and" &&
         "filter" in rowFilter;
@@ -68,7 +68,7 @@ export interface OrFilter<Row> {
     filter: Array<RowFilter<Row> | Partial<Row>>;
 }
 export function isOrFilter<Row>(
-    rowFilter: RowFilter<Row>
+    rowFilter: RowFilter<Row>,
 ): rowFilter is OrFilter<Row> {
     return rowFilter.type == "or" &&
         "filter" in rowFilter;
@@ -99,7 +99,7 @@ export interface SqlFilterResult {
 export function makeRowFilterPg<Row>(
     rowFilter: RowFilter<Row> | Partial<Row>,
     tableName: string,
-    paramOffset: number = 0,
+    paramOffset = 0,
 ): SqlFilterResult {
     rowFilter = normalizeRowFilter(rowFilter);
 
@@ -184,7 +184,7 @@ export function makeRowFilterPg<Row>(
             return { filterSql, param, paramCount };
         }
 
-        default: throw new Error(`invalid type`);
+        default: throw new Error("invalid type");
     }
 
 }
@@ -225,6 +225,6 @@ export function makeRowFilterFunction<Row>(
             return (row: Row) => fns.every(fn => fn(row));
         }
 
-        default: throw new Error(`invalid type`);
+        default: throw new Error("invalid type");
     }
 }

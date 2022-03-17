@@ -4,11 +4,11 @@ import { UnexpectedRowCountError } from "./error.js";
 import { RowDescriptor } from "./row-descriptor.js";
 import { makeRowFilterPg, RowFilter } from "./row-filter.js";
 
-export class TableTransaction {
+export class Transaction {
 
     public static async with<T>(
         pool: pg.Pool,
-        job: (context: TableTransaction) => Promisable<T>,
+        job: (context: Transaction) => Promisable<T>,
     ): Promise<T> {
         const client = await pool.connect();
         const context = new this(client);

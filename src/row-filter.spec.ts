@@ -1,13 +1,13 @@
 import test from "tape-promise/tape.js";
 import {
-    makeRowFilterFunction, makeRowFilterPg, normalizeRowFilter,
-} from "./row-filter";
+    makeRowFilterFunction, makeRowFilterPg, normalizeRowFilter
+} from "./row-filter.js";
 
 test("row-filter normalize", async (t) => {
     t.deepEqual(normalizeRowFilter({ a: null }), {
-        _ft: "and",
+        type: "and",
         filter: [{
-            _ft: "eq",
+            type: "eq",
             field: "a",
             value: null,
         }],
@@ -17,7 +17,7 @@ test("row-filter normalize", async (t) => {
 test("row-filter pg eq", async (t) => {
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "eq", field: "a", value: null,
+        type: "eq", field: "a", value: null,
     }, "t"), {
         filterSql: `"t"."a" IS NULL`,
         param: [],
@@ -25,7 +25,7 @@ test("row-filter pg eq", async (t) => {
     });
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "eq", field: "a", value: null, invert: true,
+        type: "eq", field: "a", value: null, invert: true,
     }, "t", 10), {
         filterSql: `"t"."a" IS NOT NULL`,
         param: [],
@@ -33,7 +33,7 @@ test("row-filter pg eq", async (t) => {
     });
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "eq", field: "a", value: 0,
+        type: "eq", field: "a", value: 0,
     }, "t"), {
         filterSql: `"t"."a" = $1`,
         param: [0],
@@ -41,7 +41,7 @@ test("row-filter pg eq", async (t) => {
     });
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "eq", field: "a", value: "", invert: true,
+        type: "eq", field: "a", value: "", invert: true,
     }, "t", 10), {
         filterSql: `"t"."a" <> $11`,
         param: [""],
@@ -53,7 +53,7 @@ test("row-filter pg eq", async (t) => {
 test("row-filter pg min max", async (t) => {
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "min", field: "a", value: 0,
+        type: "min", field: "a", value: 0,
     }, "t"), {
         filterSql: `"t"."a" >= $1`,
         param: [0],
@@ -61,7 +61,7 @@ test("row-filter pg min max", async (t) => {
     });
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "min", field: "a", value: "", exclusive: true,
+        type: "min", field: "a", value: "", exclusive: true,
     }, "t", 10), {
         filterSql: `"t"."a" > $11`,
         param: [""],
@@ -69,7 +69,7 @@ test("row-filter pg min max", async (t) => {
     });
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "max", field: "a", value: "",
+        type: "max", field: "a", value: "",
     }, "t"), {
         filterSql: `"t"."a" <= $1`,
         param: [""],
@@ -77,7 +77,7 @@ test("row-filter pg min max", async (t) => {
     });
 
     t.deepEqual(makeRowFilterPg({
-        _ft: "max", field: "a", value: 0, exclusive: true,
+        type: "max", field: "a", value: 0, exclusive: true,
     }, "t", 10), {
         filterSql: `"t"."a" < $11`,
         param: [0],
@@ -90,9 +90,9 @@ test("row-filter pg and or", async (t) => {
 
     t.deepEqual(
         makeRowFilterPg({
-            _ft: "and",
+            type: "and",
             filter: [{
-                _ft: "eq",
+                type: "eq",
                 field: "a",
                 value: "",
             }],
@@ -106,13 +106,13 @@ test("row-filter pg and or", async (t) => {
 
     t.deepEqual(
         makeRowFilterPg<{ a: string, b: number }>({
-            _ft: "and",
+            type: "and",
             filter: [{
-                _ft: "eq",
+                type: "eq",
                 field: "a",
                 value: "",
             }, {
-                _ft: "eq",
+                type: "eq",
                 field: "b",
                 value: 0,
             }],
@@ -126,19 +126,19 @@ test("row-filter pg and or", async (t) => {
 
     t.deepEqual(
         makeRowFilterPg<{ a: string, b: number }>({
-            _ft: "or",
+            type: "or",
             filter: [{
-                _ft: "eq",
+                type: "eq",
                 field: "a",
                 value: "yes",
             }, {
-                _ft: "and",
+                type: "and",
                 filter: [{
-                    _ft: "min",
+                    type: "min",
                     field: "b",
                     value: -10,
                 }, {
-                    _ft: "max",
+                    type: "max",
                     field: "b",
                     value: 10,
                     exclusive: true,
@@ -154,19 +154,19 @@ test("row-filter pg and or", async (t) => {
 
     t.deepEqual(
         makeRowFilterPg<{ a: string, b: number | null }>({
-            _ft: "or",
+            type: "or",
             filter: [{
-                _ft: "eq",
+                type: "eq",
                 field: "a",
                 value: "yes",
             }, {
-                _ft: "and",
+                type: "and",
                 filter: [{
-                    _ft: "min",
+                    type: "min",
                     field: "b",
                     value: -10,
                 }, {
-                    _ft: "max",
+                    type: "max",
                     field: "b",
                     value: 10,
                     exclusive: true,
@@ -205,7 +205,7 @@ test("row-filter fn eq", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "eq", field: "a", value: null }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "eq", field: "a", value: null }),
         ),
         [
             { a: null },
@@ -215,7 +215,7 @@ test("row-filter fn eq", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "eq", field: "a", value: null, invert: true }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "eq", field: "a", value: null, invert: true }),
         ),
         [
             { a: 0 },
@@ -227,7 +227,7 @@ test("row-filter fn eq", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "eq", field: "a", value: 0 }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "eq", field: "a", value: 0 }),
         ),
         [
             { a: 0 },
@@ -237,7 +237,7 @@ test("row-filter fn eq", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "eq", field: "a", value: 0, invert: true }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "eq", field: "a", value: 0, invert: true }),
         ),
         [
             { a: null },
@@ -259,7 +259,7 @@ test("row-filter fn min max", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "min", field: "a", value: 0 }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "min", field: "a", value: 0 }),
         ),
         [
             { a: 0 },
@@ -271,7 +271,7 @@ test("row-filter fn min max", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "min", field: "a", value: 0, exclusive: true }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "min", field: "a", value: 0, exclusive: true }),
         ),
         [
             { a: 10 },
@@ -282,7 +282,7 @@ test("row-filter fn min max", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "max", field: "a", value: 10 }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "max", field: "a", value: 10 }),
         ),
         [
             { a: 0 },
@@ -293,7 +293,7 @@ test("row-filter fn min max", async (t) => {
 
     t.deepEqual(
         list.filter(
-            makeRowFilterFunction<{ a: number | null }>({ _ft: "max", field: "a", value: 10, exclusive: true }),
+            makeRowFilterFunction<{ a: number | null }>({ type: "max", field: "a", value: 10, exclusive: true }),
         ),
         [
             { a: 0 },
@@ -315,16 +315,16 @@ test("row-filter fn and or", async (t) => {
     t.deepEqual(
         list.filter(
             makeRowFilterFunction<{ a: number | null, b: string }>({
-                _ft: "or",
+                type: "or",
                 filter: [{
-                    _ft: "and",
+                    type: "and",
                     filter: [{
-                        _ft: "min",
+                        type: "min",
                         field: "a",
                         value: 10,
                         exclusive: true,
                     }, {
-                        _ft: "max",
+                        type: "max",
                         field: "a",
                         value: 20,
                     }],

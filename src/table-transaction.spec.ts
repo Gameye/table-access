@@ -1,18 +1,23 @@
-import * as test from "blue-tape";
-import { using } from "dispose";
-import { PgContext } from "pg-context";
-import { UnexpectedRowCountError, UniqueConstraintError } from "./error";
-import { RowDescriptor } from "./row-descriptor";
-import { TableTransaction } from "./table-transaction";
+import assert from "assert";
+import pg from "pg";
+import test from "tape-promise/tape.js";
+import { UnexpectedRowCountError } from "./error.js";
+import { RowDescriptor } from "./row-descriptor.js";
+import { Transaction } from "./table-transaction.js";
+import { withTestContext } from "./test-context.js";
 
-const sql = `
-CREATE TABLE public.one(
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
-);
-INSERT INTO public.one(name)
-VALUES('one'), ('two');
-`;
+async function initializeMocks(pool: pg.Pool) {
+    const sql = `
+    CREATE TABLE public.one(
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE
+    );
+    INSERT INTO public.one(name)
+    VALUES('one'), ('two');
+    `;
+
+    await pool.query(sql)
+}
 
 interface OneRow {
     id: number;
@@ -26,9 +31,11 @@ const OneRowDescriptor: RowDescriptor<OneRow> = {
 
 test(
     "TableTransaction#single",
-    async t => using(PgContext.create(sql, { user: "postgres" }), async ({ pool }) => {
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
         {
-            const row = await TableTransaction.execute(pool, q => q.single(
+            const row = await Transaction.with(pool, q => q.single(
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -36,24 +43,26 @@ test(
             t.deepEqual(row, { id: 2, name: "two" });
         }
         try {
-            const row = await TableTransaction.execute(pool, q => q.single(
+            const row = await Transaction.with(pool, q => q.single(
                 OneRowDescriptor,
                 { id: 4 },
             ));
 
             t.fail();
         }
-        catch (err) {
-            t.ok(err instanceof UnexpectedRowCountError);
+        catch (error) {
+            t.ok(error instanceof UnexpectedRowCountError);
         }
     }),
 );
 
 test(
     "TableTransaction#singleOrNull",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
         {
-            const row = await TableTransaction.execute(pool, q => q.singleOrNull(
+            const row = await Transaction.with(pool, q => q.singleOrNull(
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -62,7 +71,7 @@ test(
         }
 
         {
-            const row = await TableTransaction.execute(pool, q => q.singleOrNull(
+            const row = await Transaction.with(pool, q => q.singleOrNull(
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -75,8 +84,10 @@ test(
 
 test(
     "TableTransaction#multiple",
-    async t => using(PgContext.create(sql, { user: "postgres" }), async ({ pool }) => {
-        const rows = await TableTransaction.execute(pool, q => q.multiple(
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
+        const rows = await Transaction.with(pool, q => q.multiple(
             OneRowDescriptor,
             { id: 2 },
         ));
@@ -87,9 +98,11 @@ test(
 
 test(
     "TableTransaction#insert",
-    async t => using(PgContext.create(sql, { user: "postgres" }), async ({ pool }) => {
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
         {
-            const row = await TableTransaction.execute(pool, q => q.insert(
+            const row = await Transaction.with(pool, q => q.insert(
                 OneRowDescriptor,
                 { name: "three" },
             ));
@@ -98,36 +111,40 @@ test(
         }
 
         try {
-            const row = await TableTransaction.execute(pool, q => q.insert(
+            const row = await Transaction.with(pool, q => q.insert(
                 OneRowDescriptor,
                 { id: 1, name: "four" },
             ));
 
             t.fail();
         }
-        catch (err) {
-            t.ok(err instanceof UniqueConstraintError);
+        catch (error) {
+            assert(error instanceof pg.DatabaseError);
+            t.equal(error.code, "23505")
         }
 
         try {
-            const row = await TableTransaction.execute(pool, q => q.insert(
+            const row = await Transaction.with(pool, q => q.insert(
                 OneRowDescriptor,
                 { id: 5, name: "one" },
             ));
 
             t.fail();
         }
-        catch (err) {
-            t.ok(err instanceof UniqueConstraintError);
+        catch (error) {
+            assert(error instanceof pg.DatabaseError);
+            t.equal(error.code, "23505")
         }
     }),
 );
 
 test(
     "TableTransaction#update",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
         {
-            const row = await TableTransaction.execute(pool, q => q.update(
+            const row = await Transaction.with(pool, q => q.update(
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -137,7 +154,7 @@ test(
         }
 
         try {
-            const row = await TableTransaction.execute(pool, q => q.update(
+            const row = await Transaction.with(pool, q => q.update(
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -145,16 +162,18 @@ test(
 
             t.fail();
         }
-        catch (err) {
-            t.ok(err instanceof UnexpectedRowCountError);
+        catch (error) {
+            t.ok(error instanceof UnexpectedRowCountError);
         }
     }),
 );
 
 test(
     "TableTransaction#upsert",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
-        const row = await TableTransaction.execute(pool, q => q.upsert(
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
+        const row = await Transaction.with(pool, q => q.upsert(
             OneRowDescriptor,
             { id: 2 },
             { name: "twee" },
@@ -166,8 +185,10 @@ test(
 
 test(
     "TableTransaction#delete",
-    async t => using(PgContext.create(sql), async ({ pool }) => {
-        const row = await TableTransaction.execute(pool, q => q.delete(
+    async t => withTestContext(async ({ pool }) => {
+        await initializeMocks(pool);
+
+        const row = await Transaction.with(pool, q => q.delete(
             OneRowDescriptor,
             { id: 2 },
         ));

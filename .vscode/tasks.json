@@ -2,11 +2,12 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "npm",
-            "label": "compile",
-            "script": "compile",
+            "type": "typescript",
+            "label": "tsc-watch",
+            "tsconfig": "tsconfig.json",
+            "option": "watch",
             "problemMatcher": [
-                "$tsc"
+                "$tsc-watch"
             ],
             "group": {
                 "kind": "build",

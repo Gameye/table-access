@@ -1,13 +1,15 @@
-import * as pg from "pg";
-import { UnexpectedRowCountError, UniqueConstraintError } from "./error";
-import { RowDescriptor } from "./row-descriptor";
-import { makeRowFilterPg, RowFilter } from "./row-filter";
+import pg from "pg";
+import { Promisable } from "type-fest";
+import { UnexpectedRowCountError } from "./error.js";
+import { RowDescriptor } from "./row-descriptor.js";
+import { makeRowFilterPg, RowFilter } from "./row-filter.js";
 
-export class TableTransaction {
 
-    public static async execute<T>(
+export class Transaction {
+
+    public static async with<T>(
         pool: pg.Pool,
-        job: (context: TableTransaction) => Promise<T>,
+        job: (context: Transaction) => Promisable<T>,
     ): Promise<T> {
         const client = await pool.connect();
         const context = new this(client);
@@ -21,7 +23,7 @@ export class TableTransaction {
         }
         catch (err) {
             await client.query("ROLLBACK TRANSACTION;");
-            client.release(err);
+            client.release(true);
             throw err;
         }
     }
@@ -89,11 +91,10 @@ export class TableTransaction {
         descriptor: RowDescriptor<Row>,
         filter: RowFilter<Row> | Partial<Row>,
     ): Promise<Row[]> {
-        const { client } = this;
         const { schema, table } = descriptor;
         const filterResult = makeRowFilterPg(filter, "r");
 
-        const result = await this.executeQuery(descriptor, `
+        const result = await this.client.query(`
 SELECT row_to_json(r) AS o
 FROM "${schema}"."${table}" AS r
 ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
@@ -113,13 +114,12 @@ ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
         descriptor: RowDescriptor<Row>,
         row: Partial<Row>,
     ): Promise<Row> {
-        const { client } = this;
         const { schema, table } = descriptor;
 
         const itemFields = Object.keys(row) as Array<keyof Row>;
         const itemValues = itemFields.map(f => row[f]);
 
-        const result = await this.executeQuery(descriptor, `
+        const result = await this.client.query(`
 WITH r AS (
     INSERT INTO "${schema}"."${table}" (${itemFields.map(f => `"${f}"`).join(",")})
     VALUES (${itemFields.map((f, i) => `$${i + 1}`).join(",")})
@@ -154,7 +154,6 @@ FROM r
         filter: Partial<Row>,
         row: Partial<Row>,
     ): Promise<Row> {
-        const { client } = this;
         const { schema, table } = descriptor;
 
         const filterFields = Object.keys(filter) as Array<keyof Row>;
@@ -163,7 +162,7 @@ FROM r
         const itemFields = Object.keys(row) as Array<keyof Row>;
         const itemValues = itemFields.map(f => row[f]);
 
-        const result = await this.executeQuery(descriptor, `
+        const result = await this.client.query(`
 WITH r AS (
     UPDATE "${schema}"."${table}"
     SET ${itemFields.map((f, i) => `"${f}"=$${i + 1 + filterFields.length}`).join(",")}
@@ -200,7 +199,6 @@ FROM r
         filter: Partial<Row>,
         row: Partial<Row>,
     ): Promise<Row> {
-        const { client } = this;
         const { schema, table } = descriptor;
 
         const filterFields = Object.keys(filter) as Array<keyof Row>;
@@ -209,7 +207,7 @@ FROM r
         const rowFields = Object.keys(row) as Array<keyof Row>;
         const rowValues = rowFields.map(f => row[f]);
 
-        const result = await this.executeQuery(descriptor, `
+        const result = await this.client.query(`
 WITH r AS (
     INSERT INTO "${schema}"."${table}" (
         ${[...filterFields, ...rowFields].map(f => `"${f}"`).join(",")}
@@ -249,13 +247,12 @@ FROM r
         descriptor: RowDescriptor<Row>,
         filter: Partial<Row>,
     ): Promise<Row> {
-        const { client } = this;
         const { schema, table } = descriptor;
 
         const filterFields = Object.keys(filter) as Array<keyof Row>;
         const filterValues = filterFields.map(f => filter[f]);
 
-        const result = await this.executeQuery(descriptor, `
+        const result = await this.client.query(`
 WITH r AS (
     DELETE FROM "${schema}"."${table}"
     WHERE ${filterFields.map((f, i) => `"${f}"=$${i + 1}`).join(" AND ")}
@@ -276,29 +273,5 @@ FROM r
         const [resultingRow] = rows;
 
         return resultingRow.o;
-    }
-
-    private async executeQuery<Row extends object>(
-        descriptor: RowDescriptor<Row>,
-        text: string,
-        arg?: any[],
-    ) {
-        const { client } = this;
-        try {
-            const result = await client.query(text, arg);
-            return result;
-        }
-        catch (err) {
-            if ("code" in err) switch (err.code) {
-                case "23505":
-                    throw new UniqueConstraintError(
-                        descriptor.schema,
-                        descriptor.table,
-                        err,
-                    );
-            }
-
-            throw err;
-        }
     }
 }

@@ -93,7 +93,7 @@ export class Transaction {
         const { schema, table } = descriptor;
         const filterResult = makeRowFilterPg(filter, "r");
 
-        const result = await this.client.query(`
+        const result = await this.query(`
 SELECT row_to_json(r) AS o
 FROM "${schema}"."${table}" AS r
 ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
@@ -118,7 +118,7 @@ ${filterResult.paramCount ? `WHERE ${filterResult.filterSql}` : ""}
         const itemFields = Object.keys(row) as Array<keyof Row>;
         const itemValues = itemFields.map(f => row[f]);
 
-        const result = await this.client.query(`
+        const result = await this.query(`
 WITH r AS (
     INSERT INTO "${schema}"."${table}" (${itemFields.map(f => `"${f}"`).join(",")})
     VALUES (${itemFields.map((f, i) => `$${i + 1}`).join(",")})
@@ -161,7 +161,7 @@ FROM r
         const itemFields = Object.keys(row) as Array<keyof Row>;
         const itemValues = itemFields.map(f => row[f]);
 
-        const result = await this.client.query(`
+        const result = await this.query(`
 WITH r AS (
     UPDATE "${schema}"."${table}"
     SET ${itemFields.map((f, i) => `"${f}"=$${i + 1 + filterFields.length}`).join(",")}
@@ -206,7 +206,7 @@ FROM r
         const rowFields = Object.keys(row) as Array<keyof Row>;
         const rowValues = rowFields.map(f => row[f]);
 
-        const result = await this.client.query(`
+        const result = await this.query(`
 WITH r AS (
     INSERT INTO "${schema}"."${table}" (
         ${[...filterFields, ...rowFields].map(f => `"${f}"`).join(",")}
@@ -251,7 +251,7 @@ FROM r
         const filterFields = Object.keys(filter) as Array<keyof Row>;
         const filterValues = filterFields.map(f => filter[f]);
 
-        const result = await this.client.query(`
+        const result = await this.query(`
 WITH r AS (
     DELETE FROM "${schema}"."${table}"
     WHERE ${filterFields.map((f, i) => `"${f}"=$${i + 1}`).join(" AND ")}
@@ -273,4 +273,15 @@ FROM r
 
         return resultingRow.o;
     }
+
+    public async query<Row extends object>(
+        text: string,
+        arg?: any[],
+    ) {
+        const { client } = this;
+
+        const result = await client.query(text, arg);
+        return result;
+    }
+
 }

@@ -3,7 +3,7 @@ import pg from "pg";
 import test from "tape-promise/tape.js";
 import { UnexpectedRowCountError } from "./error.js";
 import { RowDescriptor } from "./row-descriptor.js";
-import { Transaction } from "./table-transaction.js";
+import { TableTransaction } from "./table-transaction.js";
 import { withTestContext } from "./test-context.js";
 
 async function initializeMocks(pool: pg.Pool) {
@@ -35,7 +35,7 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await Transaction.with(pool, q => q.single(
+            const row = await TableTransaction.with(pool, q => q.single(
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -43,7 +43,7 @@ test(
             t.deepEqual(row, { id: 2, name: "two" });
         }
         try {
-            const row = await Transaction.with(pool, q => q.single(
+            const row = await TableTransaction.with(pool, q => q.single(
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -62,7 +62,7 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await Transaction.with(pool, q => q.singleOrNull(
+            const row = await TableTransaction.with(pool, q => q.singleOrNull(
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -71,7 +71,7 @@ test(
         }
 
         {
-            const row = await Transaction.with(pool, q => q.singleOrNull(
+            const row = await TableTransaction.with(pool, q => q.singleOrNull(
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -87,7 +87,7 @@ test(
     async t => withTestContext(async ({ pool }) => {
         await initializeMocks(pool);
 
-        const rows = await Transaction.with(pool, q => q.multiple(
+        const rows = await TableTransaction.with(pool, q => q.multiple(
             OneRowDescriptor,
             { id: 2 },
         ));
@@ -102,7 +102,7 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await Transaction.with(pool, q => q.insert(
+            const row = await TableTransaction.with(pool, q => q.insert(
                 OneRowDescriptor,
                 { name: "three" },
             ));
@@ -111,7 +111,7 @@ test(
         }
 
         try {
-            const row = await Transaction.with(pool, q => q.insert(
+            const row = await TableTransaction.with(pool, q => q.insert(
                 OneRowDescriptor,
                 { id: 1, name: "four" },
             ));
@@ -124,7 +124,7 @@ test(
         }
 
         try {
-            const row = await Transaction.with(pool, q => q.insert(
+            const row = await TableTransaction.with(pool, q => q.insert(
                 OneRowDescriptor,
                 { id: 5, name: "one" },
             ));
@@ -144,7 +144,7 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await Transaction.with(pool, q => q.update(
+            const row = await TableTransaction.with(pool, q => q.update(
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -154,7 +154,7 @@ test(
         }
 
         try {
-            const row = await Transaction.with(pool, q => q.update(
+            const row = await TableTransaction.with(pool, q => q.update(
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -173,7 +173,7 @@ test(
     async t => withTestContext(async ({ pool }) => {
         await initializeMocks(pool);
 
-        const row = await Transaction.with(pool, q => q.upsert(
+        const row = await TableTransaction.with(pool, q => q.upsert(
             OneRowDescriptor,
             { id: 2 },
             { name: "twee" },
@@ -188,7 +188,7 @@ test(
     async t => withTestContext(async ({ pool }) => {
         await initializeMocks(pool);
 
-        const row = await Transaction.with(pool, q => q.delete(
+        const row = await TableTransaction.with(pool, q => q.delete(
             OneRowDescriptor,
             { id: 2 },
         ));

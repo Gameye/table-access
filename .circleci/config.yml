@@ -1,0 +1,62 @@
+version: 2
+
+jobs:
+  prepare:
+    docker:
+      - image: node:16
+    steps:
+      - checkout
+      - run: npm ci
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+            - out
+
+  test:
+    docker:
+      - image: node:16
+        environment:
+          PGHOST: 127.0.0.1
+          PGUSER: postgres
+      - image: postgres:11.14
+        environment:
+          POSTGRES_HOST_AUTH_METHOD: trust
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run lint
+      - run: npm test
+
+  publish-npm:
+    docker:
+      - image: node:16
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - run: npm version ${CIRCLE_TAG}
+      - run: npm publish
+
+workflows:
+  version: 2
+
+  test:
+    jobs:
+      - prepare
+      - test:
+          requires: [prepare]
+  release:
+    jobs:
+      - prepare:
+          filters:
+            branches: { ignore: /.*/ }
+            tags: { only: /^v.*$/ }
+      - publish-npm:
+          requires: [prepare]
+          context: authorized
+          filters:
+            branches: { ignore: /.*/ }
+            tags: { only: /^v.*$/ }

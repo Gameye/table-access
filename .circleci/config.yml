@@ -23,10 +23,13 @@ jobs:
         environment:
           POSTGRES_HOST_AUTH_METHOD: trust
     steps:
+      - run: apt-get update
+      - run: apt-get install --yes postgresql-client
       - checkout
       - attach_workspace:
           at: .
       - run: npm run lint
+      - run: for T in 1 2 3 5 8; do pg_isready && break || sleep $T; done
       - run: npm test
 
   publish-npm:

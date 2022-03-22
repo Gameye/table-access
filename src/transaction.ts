@@ -1,10 +1,9 @@
 import pg from "pg";
 import { Promisable } from "type-fest";
-import { Access } from "./access.js";
 
 export async function withTransaction<T>(
     poolOrClient: pg.Pool | pg.ClientBase,
-    job: (access: Access) => Promisable<T>,
+    job: (client: pg.ClientBase) => Promisable<T>,
 ): Promise<T> {
     if (poolOrClient instanceof pg.Pool) {
         const client = await poolOrClient.connect();
@@ -23,8 +22,7 @@ export async function withTransaction<T>(
     const client = poolOrClient;
     await client.query("BEGIN TRANSACTION;");
     try {
-        const access = new Access(client);
-        const result = await job(access);
+        const result = await job(client);
         await client.query("COMMIT TRANSACTION;");
         return result;
     }

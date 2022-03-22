@@ -2,6 +2,7 @@ import assert from "assert";
 import pg from "pg";
 import test from "tape-promise/tape.js";
 import { UnexpectedRowCountError } from "./error.js";
+import * as q from "./queries.js";
 import { RowDescriptor } from "./row-descriptor.js";
 import { withTestContext } from "./test-context.js";
 import { withTransaction } from "./transaction.js";
@@ -35,7 +36,8 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await withTransaction(pool, q => q.single(
+            const row = await withTransaction(pool, client => q.querySingle(
+                client,
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -43,7 +45,8 @@ test(
             t.deepEqual(row, { id: 2, name: "two" });
         }
         try {
-            const row = await withTransaction(pool, q => q.single(
+            const row = await withTransaction(pool, client => q.querySingle(
+                client,
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -62,7 +65,8 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await withTransaction(pool, q => q.singleOrNull(
+            const row = await withTransaction(pool, client => q.querySingleOrNull(
+                client,
                 OneRowDescriptor,
                 { id: 2 },
             ));
@@ -71,7 +75,8 @@ test(
         }
 
         {
-            const row = await withTransaction(pool, q => q.singleOrNull(
+            const row = await withTransaction(pool, client => q.querySingleOrNull(
+                client,
                 OneRowDescriptor,
                 { id: 4 },
             ));
@@ -87,7 +92,8 @@ test(
     async t => withTestContext(async ({ pool }) => {
         await initializeMocks(pool);
 
-        const rows = await withTransaction(pool, q => q.multiple(
+        const rows = await withTransaction(pool, client => q.queryMultiple(
+            client,
             OneRowDescriptor,
             { id: 2 },
         ));
@@ -102,7 +108,8 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await withTransaction(pool, q => q.insert(
+            const row = await withTransaction(pool, client => q.queryInsert(
+                client,
                 OneRowDescriptor,
                 { name: "three" },
             ));
@@ -111,7 +118,8 @@ test(
         }
 
         try {
-            const row = await withTransaction(pool, q => q.insert(
+            const row = await withTransaction(pool, client => q.queryInsert(
+                client,
                 OneRowDescriptor,
                 { id: 1, name: "four" },
             ));
@@ -124,7 +132,8 @@ test(
         }
 
         try {
-            const row = await withTransaction(pool, q => q.insert(
+            const row = await withTransaction(pool, client => q.queryInsert(
+                client,
                 OneRowDescriptor,
                 { id: 5, name: "one" },
             ));
@@ -144,7 +153,8 @@ test(
         await initializeMocks(pool);
 
         {
-            const row = await withTransaction(pool, q => q.update(
+            const row = await withTransaction(pool, client => q.queryUpdate(
+                client,
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -154,7 +164,8 @@ test(
         }
 
         try {
-            const row = await withTransaction(pool, q => q.update(
+            const row = await withTransaction(pool, client => q.queryUpdate(
+                client,
                 OneRowDescriptor,
                 { name: "one" },
                 { name: "een" },
@@ -173,7 +184,8 @@ test(
     async t => withTestContext(async ({ pool }) => {
         await initializeMocks(pool);
 
-        const row = await withTransaction(pool, q => q.upsert(
+        const row = await withTransaction(pool, client => q.queryUpsert(
+            client,
             OneRowDescriptor,
             { id: 2 },
             { name: "twee" },
@@ -188,7 +200,8 @@ test(
     async t => withTestContext(async ({ pool }) => {
         await initializeMocks(pool);
 
-        const row = await withTransaction(pool, q => q.delete(
+        const row = await withTransaction(pool, client => q.queryDelete(
+            client,
             OneRowDescriptor,
             { id: 2 },
         ));
